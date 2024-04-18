@@ -1,0 +1,16 @@
+[package]
+name = "x9"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[lib]
+name  = "x5"
+path = "src/lib.rs"
+
+[[bin]]
+name  = "x5"
+path = "src/main.rs"
