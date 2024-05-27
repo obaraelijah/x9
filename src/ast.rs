@@ -33,3 +33,5 @@ impl std::fmt::Debug for Expr {
         }
     }
 }
+
+pub type LispResult<T> = anyhow::Result<T>;
