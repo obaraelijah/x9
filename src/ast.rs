@@ -11,6 +11,7 @@ pub enum Expr {
     Symbol(String),
     String(Arc<String>),
     Nil,
+    Bool(bool),
 }
 
 impl std::fmt::Display for Expr {
@@ -30,6 +31,7 @@ impl std::fmt::Debug for Expr {
             Expr::Num(n) => write!(f, "{}", n),
             Expr::String(s) => write!(f, "\"{}\"", s),
             Expr::Symbol(s) => write!(f, "{}", s),
+            Expr::Bool(b) => write!(f, "{}", b),
         }
     }
 }
