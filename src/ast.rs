@@ -4,7 +4,6 @@ use std::sync::Arc;
 pub type Integer = i64;
 pub type Num = BigDecimal;
 
-
 pub enum Expr {
     Num(Num),
     Integer(Integer),
@@ -56,7 +55,6 @@ impl ToNumericExpr for usize {
 
 impl ToNumericExpr for Integer {
     fn to_expr(self) -> Expr {
-        
         Expr::Integer(self)
     }
 
@@ -82,11 +80,10 @@ impl ToNumericExpr for BigDecimal {
     }
 }
 
-
 impl Expr {
     pub(crate) fn num<T: ToNumericExpr>(number: T) -> Self {
         number.to_expr()
-    } 
+    }
 }
 
 pub type LispResult<T> = anyhow::Result<T>;

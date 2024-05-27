@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 
-use crate::ast::{Expr, Num, Integer, LispResult};
+use crate::ast::{Expr, Integer, LispResult, Num};
 
 pub fn parse_num(input: &str) -> LispResult<(Expr, usize)> {
     let next_whitespace_or_end_of_string = input
@@ -8,7 +8,7 @@ pub fn parse_num(input: &str) -> LispResult<(Expr, usize)> {
         .position(|c| !(c == '.' || c.is_numeric() || c == '-'))
         .unwrap_or(input.len());
 
-    //  slices the input string from the start to the position found in the previous step. 
+    //  slices the input string from the start to the position found in the previous step.
     let input = &input[0..next_whitespace_or_end_of_string];
 
     if let Ok(res) = input.parse::<Integer>() {
@@ -44,7 +44,6 @@ fn is_symbol_char(c: char) -> bool {
         sym => !sym.is_whitespace(),
     }
 }
-
 
 fn parse_expr(input: &str) -> LispResult<(Expr, usize)> {
     todo!()
