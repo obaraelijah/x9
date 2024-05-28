@@ -1,5 +1,6 @@
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use std::sync::Arc;
+use im::Vector;
 
 pub type Integer = i64;
 pub type Num = BigDecimal;
@@ -9,6 +10,7 @@ pub enum Expr {
     Num(Num),
     Integer(Integer),
     Symbol(String),
+    List(Vector<Expr>),
     String(Arc<String>),
     Nil,
     Bool(bool),
@@ -23,6 +25,14 @@ impl std::fmt::Display for Expr {
     }
 }
 
+fn debug_join(exprs: &Vector<Expr>) -> String {
+    exprs
+        .iter()
+        .map(|s| format!("{:?}", s))
+        .collect::<Vec<String>>()
+        .join(" ")
+}
+
 impl std::fmt::Debug for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -32,6 +42,7 @@ impl std::fmt::Debug for Expr {
             Expr::String(s) => write!(f, "\"{}\"", s),
             Expr::Symbol(s) => write!(f, "{}", s),
             Expr::Bool(b) => write!(f, "{}", b),
+            Expr::List(l) => write!(f, "({})", debug_join(l)),
         }
     }
 }
