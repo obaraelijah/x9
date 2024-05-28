@@ -1,14 +1,27 @@
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use im::Vector;
 use std::sync::Arc;
+use anyhow::anyhow;
 
 pub type Integer = i64;
 pub type Num = BigDecimal;
 
 macro_rules! bad_types {
     ($custom:expr) => {
-        Err(anyhow!($crate::symbols::ProgramError::BadTypes)).with_context(|| $custom)
+        Err(anyhow!($crate::ast::ProgramError::BadTypes)).with_context(|| $custom)
     };
+
+    ($expected:expr, $given:expr) => {{
+        use anyhow::{anyhow, Context};
+        Err(anyhow!($crate::ast::ProgramError::BadTypes)).with_context(|| {
+            format!(
+                "Error: Expected {}, but got type '{}': {:?}",
+                $expected,
+                $given.get_type_str(),
+                $given
+            )
+        })
+    }};
 }
 
 #[derive(Clone)]
@@ -105,6 +118,19 @@ impl Expr {
         number.to_expr()
     }
 
+    pub(crate) fn get_type_str(&self) -> &'static str {
+        match self {
+            Expr::Num(_) => "num",
+            Expr::String(_) => "str",
+            Expr::Integer(_) => "int",
+            Expr::Bool(_) => "bool",
+            Expr::Symbol(_) => "symbol",
+            Expr::List(_) => "list",
+            Expr::Tuple(_) => "tuple",
+            Expr::Nil => "nil",
+        }
+    }
+
     pub(crate) fn string(s: String) -> Self {
         Expr::String(Arc::new(s))
     }
@@ -121,9 +147,21 @@ impl Expr {
         } else if let Expr::Tuple(l) = self {
             Ok(l.clone())
         } else {
-            Ok(())
+            bad_types!("list", self)
         }
     }
 }
 
+#[derive(Debug)]
+pub(super) enum ProgramError {
+    BadTypes, //context
+}
+
+impl std::fmt::Display for ProgramError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 pub type LispResult<T> = anyhow::Result<T>;
+
