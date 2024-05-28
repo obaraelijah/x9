@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use im::Vector;
+use im::{vector, Vector};
 
 use crate::ast::{Expr, Integer, LispResult, Num};
 
@@ -51,7 +51,7 @@ fn parse_string(input: &str) -> LispResult<(Expr, usize)> {
         ));
     }
 
-    let mut curr_pos = 1; 
+    let mut curr_pos = 1;
     let mut output_str = String::new();
     let mut chars_iterator = input.chars().skip(1).peekable();
 
@@ -70,9 +70,12 @@ fn parse_string(input: &str) -> LispResult<(Expr, usize)> {
                         _ => return Err(anyhow!("Invalid escape sequence: \\{}", next_char)),
                     }
                 } else {
-                    return Err(anyhow!("Incomplete escape sequence at end of input: {}", input));
+                    return Err(anyhow!(
+                        "Incomplete escape sequence at end of input: {}",
+                        input
+                    ));
                 }
-            },
+            }
             '"' => break,
             _ => output_str.push(curr_char),
         }
@@ -85,7 +88,7 @@ fn parse_string(input: &str) -> LispResult<(Expr, usize)> {
     Ok((Expr::string(output_str), curr_pos))
 }
 
-// symbolic expressions
+//  Lisp symbolic expressions
 fn parse_sexp(input: &str) -> LispResult<(Expr, usize)> {
     if input.is_empty() {
         return Err(anyhow!("Attempted to parse sexp on empty string!"));
@@ -125,7 +128,20 @@ fn parse_sexp(input: &str) -> LispResult<(Expr, usize)> {
     Ok((Expr::List(contents), curr_pos))
 }
 
+fn parse_dict(input: &str) -> LispResult<(Expr, usize)> {
+    if input.is_empty() {
+        return Err(anyhow!("Attempted to parse a dict on an empty string!"));
+    }
 
+    if !input.starts_with('{') {
+        return Err(anyhow!(
+            "Attempted to parse a dict from a string not starting with a curly brace! {}",
+            input
+        ));
+    }
+
+    let mut curr_pos = 1;
+}
 
 fn next_non_whitespace_and_comment_pos(input: &str) -> usize {
     let mut output_pos = 0;
@@ -149,7 +165,6 @@ fn next_non_whitespace_and_comment_pos(input: &str) -> usize {
     }
     output_pos
 }
- 
 
 fn is_symbol_char(c: char) -> bool {
     match c {
@@ -158,6 +173,46 @@ fn is_symbol_char(c: char) -> bool {
     }
 }
 
+// parse a single Lisp expression from a string
 fn parse_expr(input: &str) -> LispResult<(Expr, usize)> {
-    todo!()
+    if input.is_empty() {
+        return Err(anyhow!("Attempted to parse an empty input!"));
+    }
+
+    let first_char = input.chars().next().unwrap();
+    let second_char_is_numeric = input
+        .chars()
+        .nth(1)
+        .map(|c| c.is_numeric())
+        .unwrap_or(false);
+
+    let (item, next_pos) = match first_char {
+        _num if first_char.is_numeric() || (first_char == '-' && second_char_is_numeric) => {
+            parse_num(input)?
+        }
+        '"' => parse_string(input)?,
+        '(' => parse_sexp(input)?,
+        '{' => parse_dict(input)?,
+        '#' => {
+            let (inner_sexp, next_pos) = parse_sexp(&input[1..])?;
+            (
+                Expr::List(vector![Expr::Symbol("anon-fn-sugar".into()), inner_sexp]),
+                next_pos + 1,
+            )
+        }
+        '@' => {
+            let (inner_sexp, next_pos) = parse_sexp(&input[1..])?;
+            (
+                inner_sexp.push_front(Expr::Symbol("partial".into()))?,
+                next_pos + 1,
+            )
+        }
+        '^' => {
+            let (inner_sexp, next_pos) = parse_sexp(&input[1..])?;
+            let mut list = inner_sexp.get_list()?;
+            list.push_front(Expr::Symbol("tuple".into()));
+            (Expr::List(list), next_pos + 1)
+        }
+    };
+    Ok((item, next_pos))
 }

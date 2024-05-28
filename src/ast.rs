@@ -1,9 +1,15 @@
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
-use std::sync::Arc;
 use im::Vector;
+use std::sync::Arc;
 
 pub type Integer = i64;
 pub type Num = BigDecimal;
+
+macro_rules! bad_types {
+    ($custom:expr) => {
+        Err(anyhow!($crate::symbols::ProgramError::BadTypes)).with_context(|| $custom)
+    };
+}
 
 #[derive(Clone)]
 pub enum Expr {
@@ -13,6 +19,7 @@ pub enum Expr {
     List(Vector<Expr>),
     String(Arc<String>),
     Nil,
+    Tuple(Vector<Expr>),
     Bool(bool),
 }
 
@@ -43,6 +50,7 @@ impl std::fmt::Debug for Expr {
             Expr::Symbol(s) => write!(f, "{}", s),
             Expr::Bool(b) => write!(f, "{}", b),
             Expr::List(l) => write!(f, "({})", debug_join(l)),
+            Expr::Tuple(l) => write!(f, "^({})", debug_join(l)),
         }
     }
 }
@@ -99,6 +107,22 @@ impl Expr {
 
     pub(crate) fn string(s: String) -> Self {
         Expr::String(Arc::new(s))
+    }
+
+    pub(crate) fn push_front(&self, item: Expr) -> LispResult<Expr> {
+        todo!()
+    }
+
+    pub(crate) fn get_list(&self) -> LispResult<Vector<Expr>> {
+        if let Expr::List(l) = self {
+            Ok(l.clone())
+        } else if let Expr::Nil = self {
+            Ok(Vector::new())
+        } else if let Expr::Tuple(l) = self {
+            Ok(l.clone())
+        } else {
+            Ok(())
+        }
     }
 }
 
