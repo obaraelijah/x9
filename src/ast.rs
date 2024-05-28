@@ -3,9 +3,6 @@ use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use im::Vector;
 use std::sync::Arc;
 
-pub type Integer = i64;
-pub type Num = BigDecimal;
-
 macro_rules! bad_types {
     ($custom:expr) => {
         Err(anyhow!($crate::ast::ProgramError::BadTypes)).with_context(|| $custom)
@@ -24,7 +21,11 @@ macro_rules! bad_types {
     }};
 }
 
-#[derive(Clone)]
+pub type Integer = i64;
+pub type Num = BigDecimal;
+pub type Dict = im::HashMap<Expr, Expr>;
+
+#[derive(Clone, Hash)]
 pub enum Expr {
     Num(Num),
     Integer(Integer),
@@ -35,6 +36,8 @@ pub enum Expr {
     Quote(Vector<Expr>),
     Tuple(Vector<Expr>),
     Bool(bool),
+    Function(Function),
+    Dict(Dict),
 }
 
 impl PartialEq for Expr {
@@ -52,6 +55,7 @@ impl PartialEq for Expr {
             (Expr::Tuple(l), Expr::Tuple(r)) => l.eq(r),
             (Expr::Quote(l), Expr::Quote(r)) => l.eq(r),
             (Expr::Bool(l), Expr::Bool(r)) => l.eq(r),
+            (Expr::Dict(l), Expr::Dict(r)) => l.eq(r),
             (Expr::Nil, Expr::Nil) => true,
             _ => false,
         }
@@ -83,10 +87,12 @@ impl std::fmt::Debug for Expr {
             Expr::Num(n) => write!(f, "{}", n),
             Expr::String(s) => write!(f, "\"{}\"", s),
             Expr::Symbol(s) => write!(f, "{}", s),
+            Expr::Function(ff) => write!(f, "{}", ff),
             Expr::Quote(l) => write!(f, "'({})", debug_join(l)),
             Expr::Bool(b) => write!(f, "{}", b),
             Expr::List(l) => write!(f, "({})", debug_join(l)),
             Expr::Tuple(l) => write!(f, "^({})", debug_join(l)),
+            Expr::Dict(l) => write!(f, "{:?}", l),
         }
     }
 }
@@ -186,6 +192,8 @@ impl Expr {
             Expr::Tuple(_) => "tuple",
             Expr::Nil => "nil",
             Expr::Quote(_) => "quote",
+            Expr::Function(_) => "function",
+            Expr::Dict(_) => "map",
         }
     }
 
@@ -195,6 +203,10 @@ impl Expr {
 
     pub(crate) fn push_front(&self, item: Expr) -> LispResult<Expr> {
         todo!()
+    }
+
+    pub(crate) fn function(f: Function) -> Self {
+        Expr::Function(f)
     }
 
     pub(crate) fn get_list(&self) -> LispResult<Vector<Expr>> {
@@ -210,6 +222,44 @@ impl Expr {
     }
 }
 
+
+
+pub type LispResult<T> = anyhow::Result<T>;
+
+#[derive(Clone)]
+pub struct Function {
+    eval_args: bool,
+}
+
+use std::hash::{Hash, Hasher};
+
+impl Hash for Function {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.eval_args.hash(state);
+    }
+}
+
+impl PartialEq for Function {
+    fn eq(&self, other: &Self) -> bool {
+        // TODO: See if this is an issue. This should only appear in
+        // one code generation unit (i.e. this crate), so it should be safe.
+        todo!()
+    }
+}
+
+impl std::fmt::Debug for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::fmt::Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+
 #[derive(Debug)]
 pub(super) enum ProgramError {
     BadTypes, //context
@@ -220,5 +270,3 @@ impl std::fmt::Display for ProgramError {
         write!(f, "{:?}", self)
     }
 }
-
-pub type LispResult<T> = anyhow::Result<T>;

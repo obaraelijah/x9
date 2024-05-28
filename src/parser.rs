@@ -401,7 +401,6 @@ mod parser_tests {
         }
     }
 
-
     #[test]
     fn test_dict() {
         let tests = [
@@ -463,5 +462,4 @@ mod parser_tests {
             )
         }
     }
-
 }
