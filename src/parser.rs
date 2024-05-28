@@ -213,6 +213,20 @@ fn parse_expr(input: &str) -> LispResult<(Expr, usize)> {
             list.push_front(Expr::Symbol("tuple".into()));
             (Expr::List(list), next_pos + 1)
         }
+        '\'' => {
+            let (inner_sexp, next_pos) = parse_sexp(&input[1..])?;
+            (
+                Expr::Quote(inner_sexp.get_list()?), next_pos + 1
+            )
+        }
+        _sym if is_symbol_char(first_char) => parse_symbol(input)?,
+        otherwise => {
+            return Err(anyhow!(
+                "Failed to parse! Unknown prefix {} in {}",
+                otherwise,
+                input
+            ))
+        }
     };
     Ok((item, next_pos))
 }

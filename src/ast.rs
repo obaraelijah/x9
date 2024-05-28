@@ -32,6 +32,7 @@ pub enum Expr {
     List(Vector<Expr>),
     String(Arc<String>),
     Nil,
+    Quote(Vector<Expr>),
     Tuple(Vector<Expr>),
     Bool(bool),
 }
@@ -61,6 +62,7 @@ impl std::fmt::Debug for Expr {
             Expr::Num(n) => write!(f, "{}", n),
             Expr::String(s) => write!(f, "\"{}\"", s),
             Expr::Symbol(s) => write!(f, "{}", s),
+            Expr::Quote(l) => write!(f, "'({})", debug_join(l)),
             Expr::Bool(b) => write!(f, "{}", b),
             Expr::List(l) => write!(f, "({})", debug_join(l)),
             Expr::Tuple(l) => write!(f, "^({})", debug_join(l)),
@@ -128,6 +130,7 @@ impl Expr {
             Expr::List(_) => "list",
             Expr::Tuple(_) => "tuple",
             Expr::Nil => "nil",
+            Expr::Quote(_) => "quote",
         }
     }
 
