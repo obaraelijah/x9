@@ -162,7 +162,7 @@ fn parse_dict(input: &str) -> LispResult<(Expr, usize)> {
         values.push_back(value);
         curr_pos += next_pos;
         curr_pos += next_non_whitespace_and_comment_pos(&input[curr_pos..]);
-        
+
         if input[curr_pos..].starts_with('}') {
             // return Err(anyhow!("Expected dict to end with a curly brace!", input));
             curr_pos += 1;
@@ -268,4 +268,46 @@ fn parse_expr(input: &str) -> LispResult<(Expr, usize)> {
         }
     };
     Ok((item, next_pos))
+}
+
+pub struct ExprIterator<'a> {
+    input: &'a str, // input string over which iterator will iterate
+    done: bool, // tracks whether iteration over the input string is complete
+}
+
+impl<'a> ExprIterator<'a> {
+    pub(crate) fn new(input: &'a str) -> Self {
+        Self { input, done: false }
+    }
+}
+
+impl<'a> Iterator for ExprIterator<'a> {
+    type Item = LispResult<Expr>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        let ignored_prefix_pos = next_non_whitespace_and_comment_pos(self.input);
+        self.input = &self.input[ignored_prefix_pos..];
+        if self.input.is_empty() {
+            self.done = true;
+            return None;
+        }
+        let res = match parse_expr(self.input) {
+            Ok((item, next_pos)) => {
+                self.input = &self.input[next_pos..];
+                Ok(item)
+            }
+            Err(e) => {
+                self.done = true;
+                Err(e)
+            }
+        };
+        Some(res)
+    }
+}
+
+pub fn read(s: &str) -> ExprIterator {
+    ExprIterator::new(s)
 }
