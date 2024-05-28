@@ -37,6 +37,27 @@ pub enum Expr {
     Bool(bool),
 }
 
+impl PartialEq for Expr {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Expr::Num(l), Expr::Num(r)) => l.eq(r),
+            (Expr::Integer(l), Expr::Integer(r)) => l.eq(r),
+            (Expr::Num(l), Expr::Integer(r)) => l.eq(&r.to_bigdecimal()),
+            (Expr::Integer(l), Expr::Num(r)) => l.to_bigdecimal().eq(r),
+            (Expr::Symbol(l), Expr::Symbol(r)) => l.eq(r),
+            (Expr::String(l), Expr::String(r)) => l.eq(r),
+            (Expr::List(l), Expr::List(r)) => l.eq(r),
+            (Expr::Tuple(l), Expr::List(r)) => l.eq(r),
+            (Expr::List(l), Expr::Tuple(r)) => l.eq(r),
+            (Expr::Tuple(l), Expr::Tuple(r)) => l.eq(r),
+            (Expr::Quote(l), Expr::Quote(r)) => l.eq(r),
+            (Expr::Bool(l), Expr::Bool(r)) => l.eq(r),
+            (Expr::Nil, Expr::Nil) => true,
+            _ => false,
+        }
+    }
+}
+
 impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

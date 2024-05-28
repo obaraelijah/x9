@@ -311,3 +311,20 @@ impl<'a> Iterator for ExprIterator<'a> {
 pub fn read(s: &str) -> ExprIterator {
     ExprIterator::new(s)
 }
+
+#[cfg(test)]
+mod parser_tests {
+    use im::Vector;
+
+    use super::*;
+    use crate::ast::Expr;
+
+    #[test]
+    fn parse_floats() {
+        assert_eq!(parse_num("1").unwrap(), (Expr::num(1), 1));
+        assert_eq!(parse_num("3 hello").unwrap(), (Expr::num(3), 1));
+        assert_eq!(parse_num("1.0").unwrap(), (Expr::num(1.0f32), 3));
+        assert_eq!(parse_num("1.1").unwrap(), (Expr::num(1.1f32), 3));
+        assert!(parse_num("ee").is_err());
+    }
+}
