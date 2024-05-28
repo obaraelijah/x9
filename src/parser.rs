@@ -253,9 +253,7 @@ fn parse_expr(input: &str) -> LispResult<(Expr, usize)> {
         }
         '\'' => {
             let (inner_sexp, next_pos) = parse_sexp(&input[1..])?;
-            (
-                Expr::Quote(inner_sexp.get_list()?), next_pos + 1
-            )
+            (Expr::Quote(inner_sexp.get_list()?), next_pos + 1)
         }
         _sym if is_symbol_char(first_char) => parse_symbol(input)?,
         otherwise => {
@@ -271,7 +269,7 @@ fn parse_expr(input: &str) -> LispResult<(Expr, usize)> {
 
 pub struct ExprIterator<'a> {
     input: &'a str, // input string over which iterator will iterate
-    done: bool, // tracks whether iteration over the input string is complete
+    done: bool,     // tracks whether iteration over the input string is complete
 }
 
 impl<'a> ExprIterator<'a> {
@@ -356,4 +354,51 @@ mod parser_tests {
             (Expr::string("hello".to_string()), 7)
         );
     }
+
+    #[test]
+    fn test_parse_symbol() {
+        assert_eq!(
+            parse_symbol("symbol 123").unwrap(),
+            (Expr::Symbol("symbol".into()), 6)
+        );
+        assert_eq!(parse_symbol("s").unwrap(), (Expr::Symbol("s".into()), 1));
+        assert!(parse_symbol("123").is_err());
+    }
+
+    #[test]
+    fn test_sexp() {
+        let tests = [
+            (
+                "(1 2 3)",
+                Expr::List(vector![Expr::num(1), Expr::num(2), Expr::num(3)]),
+                7,
+            ),
+            ("()", Expr::List(vector![]), 2),
+            (
+                "(neato)",
+                Expr::List(vector![Expr::Symbol("neato".into())]),
+                7,
+            ),
+            (
+                "(neato   (1 2))   ",
+                Expr::List(vector![
+                    Expr::Symbol("neato".into()),
+                    Expr::List(vector![Expr::num(1), Expr::num(2),]),
+                ]),
+                15,
+            ),
+        ];
+        for (text, expected, idx) in tests {
+            let res = parse_sexp(text);
+            let res_s = format!("{:?}", res);
+            assert_eq!(
+                res.expect(&format!(
+                    "Could not parse {} into {}; result is {}",
+                    text, expected, res_s
+                )),
+                (expected.clone(), idx),
+            )
+        }
+    }
+
 }

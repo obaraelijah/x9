@@ -1,7 +1,7 @@
+use anyhow::anyhow;
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use im::Vector;
 use std::sync::Arc;
-use anyhow::anyhow;
 
 pub type Integer = i64;
 pub type Num = BigDecimal;
@@ -222,4 +222,3 @@ impl std::fmt::Display for ProgramError {
 }
 
 pub type LispResult<T> = anyhow::Result<T>;
-
