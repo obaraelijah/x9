@@ -3,21 +3,17 @@ use im::{vector, Vector};
 
 use crate::ast::{Expr, Integer, LispResult, Num};
 
-pub fn parse_num(input: &str) -> LispResult<(Expr, usize)> {
-    let next_whitespace_or_end_of_string = input
+fn parse_num(input: &str) -> LispResult<(Expr, usize)> {
+    let next_whitespace_or_end = input
         .chars()
-        .position(|c| !(c == '.' || c.is_numeric() || c == '-'))
+        .position(|c| !(c == '.' || c.is_numeric() || c == '-')) // TODO: Handle floating patterns like 1e3
         .unwrap_or(input.len());
-
-    //  slices the input string from the start to the position found in the previous step.
-    let input = &input[0..next_whitespace_or_end_of_string];
-
+    let input = &input[0..next_whitespace_or_end];
     if let Ok(res) = input.parse::<Integer>() {
-        return Ok((Expr::num(res), next_whitespace_or_end_of_string));
+        return Ok((Expr::num(res), next_whitespace_or_end));
     }
-
     if let Ok(res) = input.parse::<Num>() {
-        return Ok((Expr::num(res), next_whitespace_or_end_of_string));
+        return Ok((Expr::num(res), next_whitespace_or_end));
     }
     Err(anyhow!("Cannot convert: \"{}\" into an int", input))
 }
@@ -43,48 +39,51 @@ fn parse_string(input: &str) -> LispResult<(Expr, usize)> {
     // TODO: Clean this up
     if input.len() < 2 {
         return Err(anyhow!("Could not parse the string: {}", input));
-    }
-    if !input.starts_with('"') {
+    } else if !input.starts_with('\"') {
         return Err(anyhow!(
             "Parse string called on something that does not start with a quote: {}",
             input
         ));
     }
-
-    let mut curr_pos = 1;
+    let mut curr_pos = 0;
     let mut output_str = String::new();
     let mut chars_iterator = input.chars().skip(1).peekable();
-
-    while let Some(curr_char) = chars_iterator.next() {
+    loop {
         curr_pos += 1;
-        match curr_char {
-            '\\' => {
-                if let Some(&next_char) = chars_iterator.peek() {
+        match chars_iterator.next() {
+            Some(curr_char) => match (curr_char, chars_iterator.peek()) {
+                ('\\', None) => return Err(anyhow!("Tried to escape, failed! {}", input)),
+                ('\\', Some('\\')) => {
                     curr_pos += 1;
-                    chars_iterator.next();
-                    match next_char {
-                        '\\' => output_str.push('\\'),
-                        'n' => output_str.push('\n'),
-                        'r' => output_str.push('\r'),
-                        '"' => output_str.push('"'),
-                        _ => return Err(anyhow!("Invalid escape sequence: \\{}", next_char)),
-                    }
-                } else {
-                    return Err(anyhow!(
-                        "Incomplete escape sequence at end of input: {}",
-                        input
-                    ));
+                    chars_iterator.next().unwrap();
+                    output_str.push('\\');
                 }
-            }
-            '"' => break,
-            _ => output_str.push(curr_char),
+                ('\\', Some('n')) => {
+                    curr_pos += 1;
+                    chars_iterator.next().unwrap();
+                    output_str.push('\n');
+                }
+                ('\\', Some('r')) => {
+                    curr_pos += 1;
+                    chars_iterator.next().unwrap();
+                    output_str.push('\r');
+                }
+                ('\\', Some('"')) => {
+                    curr_pos += 1;
+                    chars_iterator.next().unwrap();
+                    output_str.push('"');
+                }
+                ('"', _) => {
+                    assert!(input.chars().nth(curr_pos) == Some('"'));
+                    // advance one after that ending quote
+                    curr_pos += 1;
+                    break;
+                }
+                (c, _) => output_str.push(c),
+            },
+            None => break,
         }
     }
-
-    if curr_pos >= input.len() || input.chars().nth(curr_pos - 1) != Some('"') {
-        return Err(anyhow!("String not terminated properly: {}", input));
-    }
-
     Ok((Expr::string(output_str), curr_pos))
 }
 
@@ -326,5 +325,35 @@ mod parser_tests {
         assert_eq!(parse_num("1.0").unwrap(), (Expr::num(1.0f32), 3));
         assert_eq!(parse_num("1.1").unwrap(), (Expr::num(1.1f32), 3));
         assert!(parse_num("ee").is_err());
+    }
+
+    #[test]
+    fn parse_strings() {
+        assert_eq!(
+            parse_string("\"abc\"").unwrap(),
+            (Expr::string("abc".to_string()), 5)
+        );
+        assert_eq!(
+            parse_string(r#""abc""#).unwrap(),
+            (Expr::string("abc".to_string()), 5)
+        );
+
+        assert_eq!(
+            parse_string(r#""""#).unwrap(),
+            (Expr::string("".to_string()), 2)
+        );
+        // "\r\n"
+        assert_eq!(
+            parse_string(r#""\r\n""#).unwrap(),
+            (Expr::string("\r\n".to_string()), 6)
+        );
+        assert_eq!(
+            parse_string(r#""\r\n\"hello\""#).unwrap(),
+            (Expr::string("\r\n\"hello\"".to_string()), 14)
+        );
+        assert_eq!(
+            parse_string(r#""hello" 123"#).unwrap(),
+            (Expr::string("hello".to_string()), 7)
+        );
     }
 }
