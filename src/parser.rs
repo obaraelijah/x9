@@ -401,4 +401,67 @@ mod parser_tests {
         }
     }
 
+
+    #[test]
+    fn test_dict() {
+        let tests = [
+            ("{}", Expr::List(vector![Expr::Symbol("dict".into())]), 2),
+            (
+                "{1: 2}",
+                Expr::List(vector![
+                    Expr::Symbol("dict".into()),
+                    Expr::num(1),
+                    Expr::num(2),
+                ]),
+                6,
+            ),
+            (
+                "{1: 2, 3 : 4,}",
+                Expr::List(vector![
+                    Expr::Symbol("dict".into()),
+                    Expr::num(1),
+                    Expr::num(2),
+                    Expr::num(3),
+                    Expr::num(4),
+                ]),
+                14,
+            ),
+            (
+                "{\"hello\": 2, 3 : 4,}",
+                Expr::List(vector![
+                    Expr::Symbol("dict".into()),
+                    Expr::string("hello".into()),
+                    Expr::num(2),
+                    Expr::num(3),
+                    Expr::num(4),
+                ]),
+                20,
+            ),
+            (
+                "{{}:{3:4}}",
+                Expr::List(vector![
+                    Expr::Symbol("dict".into()),
+                    Expr::List(vector![Expr::Symbol("dict".into())]),
+                    Expr::List(vector![
+                        Expr::Symbol("dict".into()),
+                        Expr::num(3),
+                        Expr::num(4)
+                    ]),
+                ]),
+                10,
+            ),
+        ];
+        for (text, expected, idx) in tests {
+            let res = parse_dict(text);
+            let res_s = format!("{:?}", res);
+            assert_eq!(
+                res.expect(&format!(
+                    "Could not parse {} into {}; result is {}",
+                    text, expected, res_s
+                )),
+                (expected.clone(), idx),
+            )
+        }
+    }
+
 }
