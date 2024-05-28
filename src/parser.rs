@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use im::Vector;
 
 use crate::ast::{Expr, Integer, LispResult, Num};
 
@@ -84,7 +85,71 @@ fn parse_string(input: &str) -> LispResult<(Expr, usize)> {
     Ok((Expr::string(output_str), curr_pos))
 }
 
+// symbolic expressions
+fn parse_sexp(input: &str) -> LispResult<(Expr, usize)> {
+    if input.is_empty() {
+        return Err(anyhow!("Attempted to parse sexp on empty string!"));
+    }
+    let mut char_iterator = input.chars().peekable();
+    if char_iterator.next() != Some('(') {
+        return Err(anyhow!(
+            "Attempted to parse sexp not starting with a brace! {}",
+            input
+        ));
+    }
+    let mut curr_pos = 1;
+    let mut contents = Vector::new();
+    loop {
+        let curr_input_slice = &input[curr_pos..];
+        let next_pos = next_non_whitespace_and_comment_pos(curr_input_slice);
+        for _ in 0..next_pos {
+            char_iterator.next();
+            curr_pos += 1;
+        }
+        match char_iterator.peek() {
+            None => return Err(anyhow!("Unexpected end of sexp! {}", input)),
+            Some(curr_char) => {
+                if curr_char == &')' {
+                    curr_pos += 1;
+                    break;
+                }
+                let (next_item, new_pos) = parse_expr(&input[curr_pos..])?;
+                contents.push_back(next_item);
+                for _ in 0..new_pos {
+                    char_iterator.next();
+                }
+                curr_pos += new_pos;
+            }
+        }
+    }
+    Ok((Expr::List(contents), curr_pos))
+}
 
+
+
+fn next_non_whitespace_and_comment_pos(input: &str) -> usize {
+    let mut output_pos = 0;
+    loop {
+        let input = &input[output_pos..];
+        if input.is_empty() {
+            break;
+        }
+        let leading_char = input.chars().next().unwrap();
+        if leading_char == ';' {
+            output_pos += input
+                .chars()
+                .position(|c| c == '\n')
+                .unwrap_or(input.len() - 1)
+                + 1;
+        } else if leading_char.is_whitespace() {
+            output_pos += input.chars().take_while(|c| c.is_whitespace()).count();
+        } else {
+            break;
+        }
+    }
+    output_pos
+}
+ 
 
 fn is_symbol_char(c: char) -> bool {
     match c {
