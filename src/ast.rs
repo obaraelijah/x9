@@ -109,6 +109,26 @@ impl ToNumericExpr for usize {
     }
 }
 
+impl ToNumericExpr for u32 {
+    fn to_expr(self) -> Expr {
+        Expr::Num(FromPrimitive::from_u32(self).unwrap())
+    }
+
+    fn to_bigdecimal(self) -> Num {
+        FromPrimitive::from_u32(self).unwrap()
+    }
+}
+
+impl ToNumericExpr for i32 {
+    fn to_expr(self) -> Expr {
+        Expr::Integer(self as Integer)
+    }
+
+    fn to_bigdecimal(self) -> Num {
+        FromPrimitive::from_i32(self).unwrap()
+    }
+}
+
 impl ToNumericExpr for Integer {
     fn to_expr(self) -> Expr {
         Expr::Integer(self)
@@ -116,6 +136,20 @@ impl ToNumericExpr for Integer {
 
     fn to_bigdecimal(self) -> Num {
         FromPrimitive::from_i64(self).unwrap()
+    }
+}
+
+impl ToNumericExpr for f32 {
+    fn to_expr(self) -> Expr {
+        if self.trunc() == self {
+            Expr::num(self.trunc() as u32)
+        } else {
+            Expr::Num(BigDecimal::from_f32(self).unwrap())
+        }
+    }
+
+    fn to_bigdecimal(self) -> Num {
+        FromPrimitive::from_f32(self).unwrap()
     }
 }
 
