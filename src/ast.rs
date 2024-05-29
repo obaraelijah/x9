@@ -30,7 +30,7 @@ pub type Symbol = String;
 pub enum Expr {
     Num(Num),
     Integer(Integer),
-    Symbol(String),
+    Symbol(Symbol),
     List(Vector<Expr>),
     String(Arc<String>),
     Nil,
@@ -215,23 +215,29 @@ impl Expr {
         Expr::String(Arc::new(s))
     }
 
-    pub(crate) fn push_front(&self, item: Expr) -> LispResult<Expr> {
-        todo!()
-    }
-
     pub(crate) fn function(f: Function) -> Self {
         Expr::Function(f)
     }
 
+    pub(crate) fn push_front(&self, item: Expr) -> LispResult<Expr> {
+        let mut list = self.get_list()?;
+        list.push_front(item);
+        let res = match self {
+            Expr::List(_) => Expr::List(list),
+            Expr::Quote(_) => Expr::Quote(list),
+            Expr::Tuple(_) => Expr::Tuple(list),
+            _ => unreachable!(),
+        };
+        Ok(res)
+    }
+
     pub(crate) fn get_list(&self) -> LispResult<Vector<Expr>> {
-        if let Expr::List(l) = self {
-            Ok(l.clone())
-        } else if let Expr::Nil = self {
-            Ok(Vector::new())
-        } else if let Expr::Tuple(l) = self {
-            Ok(l.clone())
-        } else {
-            bad_types!("list", self)
+        match self {
+            Expr::List(l) => Ok(l.clone()),
+            Expr::Nil => Ok(Vector::new()),
+            Expr::Tuple(l) => Ok(l.clone()),
+            Expr::Quote(l) => Ok(l.clone()),
+            _ => bad_types!("list", self),
         }
     }
 }
