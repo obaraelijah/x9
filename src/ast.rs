@@ -24,6 +24,7 @@ macro_rules! bad_types {
 pub type Integer = i64;
 pub type Num = BigDecimal;
 pub type Dict = im::HashMap<Expr, Expr>;
+pub type Symbol = String;
 
 #[derive(Clone, Hash)]
 pub enum Expr {
@@ -38,6 +39,7 @@ pub enum Expr {
     Bool(bool),
     Function(Function),
     Dict(Dict),
+    ByteCompiledFunction(ByteCompiledFunction),
 }
 
 impl PartialEq for Expr {
@@ -93,6 +95,7 @@ impl std::fmt::Debug for Expr {
             Expr::List(l) => write!(f, "({})", debug_join(l)),
             Expr::Tuple(l) => write!(f, "^({})", debug_join(l)),
             Expr::Dict(l) => write!(f, "{:?}", l),
+            Expr::ByteCompiledFunction(ff) => write!(f, "{}", ff),
         }
     }
 }
@@ -204,6 +207,7 @@ impl Expr {
             Expr::Quote(_) => "quote",
             Expr::Function(_) => "function",
             Expr::Dict(_) => "map",
+            Expr::ByteCompiledFunction(_) => "func",
         }
     }
 
@@ -279,3 +283,42 @@ impl std::fmt::Display for ProgramError {
 }
 
 impl Eq for Expr {}
+
+#[derive(Clone, Hash, PartialEq, Eq)]
+pub struct ByteCompiledFunction {
+    pub symbol: Symbol,
+    pub minimum_args: usize,
+    named_args: Box<[Symbol]>,
+    pub loc: usize,
+}
+
+impl ByteCompiledFunction {
+    pub fn new(symbol: Symbol, minimum_args: usize, named_args: Box<[Symbol]>, loc: usize) -> Self {
+        Self {
+            symbol,
+            minimum_args,
+            named_args,
+            loc,
+        }
+    }
+}
+
+impl std::fmt::Debug for ByteCompiledFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Fn<{}, min_args={}, loc={}, [ ",
+            self.symbol, self.minimum_args, self.loc
+        )?;
+        for arg in self.named_args.iter() {
+            write!(f, "{} ", arg)?;
+        }
+        write!(f, "], byte_compiled>")
+    }
+}
+
+impl std::fmt::Display for ByteCompiledFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
