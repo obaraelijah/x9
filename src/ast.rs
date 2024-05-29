@@ -190,8 +190,38 @@ impl ToNumericExpr for BigDecimal {
 }
 
 impl Expr {
+    pub(crate) fn full_order_list(&self) -> LispResult<Vector<Expr>> {
+        let list = self.get_list()?;
+        if list.is_empty() {
+            Ok(list)
+        } else {
+            let head = &list[0]; // ref for type comparison
+            if !list.iter().skip(1).all(|e| match (head, e) {
+                (Expr::Num(_), Expr::Num(_)) => true,
+                (Expr::Integer(_), Expr::Integer(_)) => true,
+                (Expr::Num(_), Expr::Integer(_)) => true,
+                (Expr::Integer(_), Expr::Num(_)) => true,
+                (Expr::String(_), Expr::String(_)) => true,
+                _ => false,
+            }) {
+                // only floats (sorta) + strings are totally ordered
+                bad_types!("list of identically typed, ordered elements", self)
+            } else {
+                Ok(list)
+            }
+        }
+    }
+
     pub(crate) fn num<T: ToNumericExpr>(number: T) -> Self {
         number.to_expr()
+    }
+
+    pub(crate) fn string(s: String) -> Self {
+        Expr::String(Arc::new(s))
+    }
+
+    pub(crate) fn function(f: Function) -> Self {
+        Expr::Function(f)
     }
 
     pub(crate) fn get_type_str(&self) -> &'static str {
@@ -209,14 +239,6 @@ impl Expr {
             Expr::Dict(_) => "map",
             Expr::ByteCompiledFunction(_) => "func",
         }
-    }
-
-    pub(crate) fn string(s: String) -> Self {
-        Expr::String(Arc::new(s))
-    }
-
-    pub(crate) fn function(f: Function) -> Self {
-        Expr::Function(f)
     }
 
     pub(crate) fn push_front(&self, item: Expr) -> LispResult<Expr> {
@@ -295,54 +317,6 @@ impl Expr {
     }
 }
 
-pub type LispResult<T> = anyhow::Result<T>;
-
-#[derive(Clone)]
-pub struct Function {
-    eval_args: bool,
-}
-
-use std::hash::{Hash, Hasher};
-
-impl Hash for Function {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.eval_args.hash(state);
-    }
-}
-
-impl PartialEq for Function {
-    fn eq(&self, other: &Self) -> bool {
-        // TODO: See if this is an issue. This should only appear in
-        // one code generation unit (i.e. this crate), so it should be safe.
-        todo!()
-    }
-}
-
-impl std::fmt::Debug for Function {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::fmt::Display for Function {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[derive(Debug)]
-pub(super) enum ProgramError {
-    BadTypes, //context
-}
-
-impl std::fmt::Display for ProgramError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl Eq for Expr {}
-
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct ByteCompiledFunction {
     pub symbol: Symbol,
@@ -381,3 +355,62 @@ impl std::fmt::Display for ByteCompiledFunction {
         write!(f, "{:?}", self)
     }
 }
+
+#[derive(Clone)]
+pub struct Function {
+    pub minimum_args: usize,
+    eval_args: bool,
+}
+
+use std::hash::{Hash, Hasher};
+
+impl Hash for Function {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.eval_args.hash(state);
+        self.minimum_args.hash(state);
+    }
+}
+
+impl PartialEq for Function {
+    fn eq(&self, other: &Self) -> bool {
+        // TODO: See if this is an issue. This should only appear in
+        // one code generation unit (i.e. this crate), so it should be safe.
+        todo!()
+    }
+}
+
+impl std::fmt::Debug for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::fmt::Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Function {
+    pub fn new(minimum_args: usize, eval_args: bool) -> Self {
+        Self {
+            minimum_args,
+            eval_args,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(super) enum ProgramError {
+    BadTypes, //context
+}
+
+impl std::fmt::Display for ProgramError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+pub type LispResult<T> = anyhow::Result<T>;
+
+impl Eq for Expr {}
