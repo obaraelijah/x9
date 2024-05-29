@@ -240,6 +240,59 @@ impl Expr {
             _ => bad_types!("list", self),
         }
     }
+
+    pub(crate) fn get_nil(&self) -> LispResult<()> {
+        match self {
+            Expr::Nil => Ok(()),
+            _ => bad_types!("nil", self),
+        }
+    }
+
+    pub(crate) fn get_num(&self) -> LispResult<Num> {
+        match self {
+            Expr::Num(n) => Ok(n.clone()),
+            Expr::Integer(n) => Ok(n.to_bigdecimal()),
+            _ => bad_types!("num", self),
+        }
+    }
+
+    pub(crate) fn get_int(&self) -> LispResult<Integer> {
+        match self {
+            // Expr::Num(n) => Ok(n.clone()), // TODO: Handle num being non-int
+            Expr::Integer(n) => Ok(*n),
+            _ => bad_types!("num", self),
+        }
+    }
+
+    pub(crate) fn get_usize(&self) -> LispResult<usize> {
+        let res = self.get_num()?.to_usize().ok_or(anyhow!(
+            "Cannot represent {} as it needs to fit in a usize",
+            self.get_num()?
+        ))?;
+        Ok(res)
+    }
+
+    pub fn get_string(&self) -> LispResult<String> {
+        if let Expr::String(s) = self {
+            Ok(s.to_string())
+        } else {
+            bad_types!("string", self)
+        }
+    }
+
+    pub(crate) fn get_dict(&self) -> LispResult<Dict> {
+        match self {
+            Expr::Dict(d) => Ok(d.clone()),
+            _ => bad_types!("dict", self),
+        }
+    }
+
+    pub(crate) fn get_function(&self) -> LispResult<&Function> {
+        match self {
+            Expr::Function(f) => Ok(f),
+            _ => bad_types!("func", self),
+        }
+    }
 }
 
 pub type LispResult<T> = anyhow::Result<T>;
