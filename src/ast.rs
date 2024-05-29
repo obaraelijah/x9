@@ -115,6 +115,16 @@ impl ToNumericExpr for usize {
     }
 }
 
+impl ToNumericExpr for u64 {
+    fn to_expr(self) -> Expr {
+        Expr::Num(FromPrimitive::from_u64(self).unwrap())
+    }
+
+    fn to_bigdecimal(self) -> Num {
+        FromPrimitive::from_u64(self).unwrap()
+    }
+}
+
 impl ToNumericExpr for u32 {
     fn to_expr(self) -> Expr {
         Expr::Num(FromPrimitive::from_u32(self).unwrap())
