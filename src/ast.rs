@@ -3,6 +3,8 @@ use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use im::Vector;
 use std::sync::Arc;
 
+use crate::interner::InternedString;
+
 macro_rules! bad_types {
     ($custom:expr) => {
         Err(anyhow!($crate::ast::ProgramError::BadTypes)).with_context(|| $custom)
@@ -24,7 +26,7 @@ macro_rules! bad_types {
 pub type Integer = i64;
 pub type Num = BigDecimal;
 pub type Dict = im::HashMap<Expr, Expr>;
-pub type Symbol = String;
+pub type Symbol = InternedString;
 
 #[derive(Clone, Hash)]
 pub enum Expr {
