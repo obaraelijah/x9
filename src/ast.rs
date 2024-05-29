@@ -232,8 +232,6 @@ impl Expr {
     }
 }
 
-
-
 pub type LispResult<T> = anyhow::Result<T>;
 
 #[derive(Clone)]
@@ -269,7 +267,6 @@ impl std::fmt::Display for Function {
     }
 }
 
-
 #[derive(Debug)]
 pub(super) enum ProgramError {
     BadTypes, //context
@@ -280,3 +277,5 @@ impl std::fmt::Display for ProgramError {
         write!(f, "{:?}", self)
     }
 }
+
+impl Eq for Expr {}
