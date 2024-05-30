@@ -38,7 +38,6 @@ impl PartialEq<str> for InternedString {
     }
 }
 
-
 impl From<&str> for InternedString {
     fn from(s: &str) -> Self {
         InternedString::new(s.to_string())
@@ -57,11 +56,29 @@ impl From<&InternedString> for InternedString {
     }
 }
 
+impl std::fmt::Display for InternedString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.read())
+    }
+}
+
+impl std::fmt::Debug for InternedString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<{}, {:?}>", self.0, self.read())
+    }
+}
+
+impl PartialOrd for InternedString {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.read().partial_cmp(&other.read())
+    }
+}
+
 static INTERNER: Lazy<RwLock<Interner>> = Lazy::new(|| RwLock::new(Interner::new()));
 
 struct Interner {
     id: u32,
-     // TODO: Use unsafe hacks here!
+    // TODO: Use unsafe hacks here!
     mapping: HashMap<String, InternedString>,
     strings: Vec<String>,
 }
@@ -72,7 +89,7 @@ impl Interner {
         mapping.insert("".into(), InternedString(0));
         let strings = vec!["".into()];
         Interner {
-            id: 0, 
+            id: 0,
             strings,
             mapping,
         }
