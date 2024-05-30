@@ -4,6 +4,7 @@ use im::Vector;
 use std::sync::Arc;
 
 use crate::interner::InternedString;
+use crate::iterators::IterType;
 
 macro_rules! bad_types {
     ($custom:expr) => {
@@ -42,6 +43,7 @@ pub enum Expr {
     Function(Function),
     Dict(Dict),
     ByteCompiledFunction(ByteCompiledFunction),
+    LazyIter(IterType),
 }
 
 impl PartialEq for Expr {
@@ -61,6 +63,7 @@ impl PartialEq for Expr {
             (Expr::Bool(l), Expr::Bool(r)) => l.eq(r),
             (Expr::Dict(l), Expr::Dict(r)) => l.eq(r),
             (Expr::Nil, Expr::Nil) => true,
+            (Expr::LazyIter(_), Expr::LazyIter(_)) => false,
             _ => false,
         }
     }
@@ -98,6 +101,7 @@ impl std::fmt::Debug for Expr {
             Expr::Tuple(l) => write!(f, "^({})", debug_join(l)),
             Expr::Dict(l) => write!(f, "{:?}", l),
             Expr::ByteCompiledFunction(ff) => write!(f, "{}", ff),
+            Expr::LazyIter(i) => write!(f, "{}", i),
         }
     }
 }
@@ -240,6 +244,7 @@ impl Expr {
             Expr::Function(_) => "function",
             Expr::Dict(_) => "map",
             Expr::ByteCompiledFunction(_) => "func",
+            Expr::LazyIter(_) => "iterator",
         }
     }
 
