@@ -360,6 +360,7 @@ impl std::fmt::Display for ByteCompiledFunction {
 
 #[derive(Clone)]
 pub struct Function {
+    pub symbol: InternedString,
     pub minimum_args: usize,
     eval_args: bool,
 }
@@ -368,6 +369,7 @@ use std::hash::{Hash, Hasher};
 
 impl Hash for Function {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        self.symbol.hash(state);
         self.eval_args.hash(state);
         self.minimum_args.hash(state);
     }
@@ -394,8 +396,9 @@ impl std::fmt::Display for Function {
 }
 
 impl Function {
-    pub fn new(minimum_args: usize, eval_args: bool) -> Self {
+    pub fn new(symbol: String, minimum_args: usize, eval_args: bool) -> Self {
         Self {
+            symbol: symbol.into(),
             minimum_args,
             eval_args,
         }
