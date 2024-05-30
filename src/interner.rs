@@ -30,6 +30,14 @@ impl InternedString {
     pub fn read(&self) -> String {
         INTERNER.read().fetch(*self)
     }
+
+    pub(crate) fn extra_arg_symbol() -> Self {
+        "&".into()
+    }
+
+    pub(crate) fn stats() -> String {
+        INTERNER.read().stats()
+    }
 }
 
 impl PartialEq<str> for InternedString {
@@ -95,11 +103,26 @@ impl Interner {
         }
     }
 
+    fn get_new_id(&mut self) -> u32 {
+        self.id += 1;
+        self.id
+    }
+
     fn intern(&mut self, s: String) -> InternedString {
-        todo!()
+        if let Some(id) = self.mapping.get(s.as_str()) {
+            return *id;
+        }
+        let i = InternedString(self.get_new_id());
+        self.strings.push(s.clone());
+        self.mapping.insert(s, i);
+        i
     }
 
     fn fetch(&self, i: InternedString) -> String {
         self.strings[i.0 as usize].clone()
+    }
+
+    pub(crate) fn stats(&self) -> String {
+        format!("Strings held: {}", self.strings.len())
     }
 }
