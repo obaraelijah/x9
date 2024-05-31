@@ -1,5 +1,6 @@
 use std::{hash::Hash, ops::Deref};
 
+use im::Vector;
 use rand::random;
 
 use crate::ast::{Expr, Function, LispResult, SymbolTable};
@@ -70,7 +71,7 @@ impl LazyIter for LazyMap {
 
 impl std::fmt::Display for LazyMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.inner)
+        write!(f, "{:?}", self.inner)
     }
 }
 
@@ -111,7 +112,7 @@ impl LazyIter for LazyFilter {
 
 impl std::fmt::Display for LazyFilter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.inner)
+        write!(f, "{:?}", self.inner)
     }
 }
 
@@ -147,7 +148,7 @@ impl Counter {
 
 impl std::fmt::Display for Counter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value())
+        write!(f, "{:?}", self.value())
     }
 }
 
@@ -170,7 +171,7 @@ impl NaturalNumbers {
 
 impl std::fmt::Display for NaturalNumbers {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.counter)
+        write!(f, "{:?}", self.counter)
     }
 }
 
@@ -192,3 +193,44 @@ impl LazyIter for NaturalNumbers {
     }
 }
 
+use std::sync::Arc;
+
+#[derive(Debug, Clone)]
+pub(crate) struct LazyList {
+    inner: Arc<Vector<Expr>>,
+    index: Counter,
+}
+
+impl LazyList {
+    pub(crate) fn lisp_new(inner: Vector<Expr>) -> LispResult<Expr> {
+        let lazy = LazyList {
+            inner: Arc::new(inner),
+            index: Counter::zero(),
+        };
+        Ok(Expr::LazyIter(Box::new(lazy)))
+    }
+}
+
+impl std::fmt::Display for LazyList {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl LazyIter for LazyList {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        todo!()
+    }
+
+    fn name(&self) -> &'static str {
+        "Lazy"
+    }
+
+    fn clone(&self) -> Box<dyn LazyIter> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn id(&self) -> u64 {
+        0
+    }
+}
