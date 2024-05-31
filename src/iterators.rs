@@ -150,3 +150,45 @@ impl std::fmt::Display for Counter {
         write!(f, "{}", self.value())
     }
 }
+
+#[derive(Clone, Debug)]
+pub(crate) struct NaturalNumbers {
+    counter: Counter,
+    end: Option<usize>,
+    id: u64,
+}
+
+impl NaturalNumbers {
+    pub(crate) fn lisp_res(start: Option<usize>, end: Option<usize>) -> LispResult<Expr> {
+        Ok(Expr::LazyIter(Box::new(NaturalNumbers {
+            counter: Counter::new(start.unwrap_or(0)),
+            end,
+            id: random(),
+        })))
+    }
+}
+
+impl std::fmt::Display for NaturalNumbers {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.counter)
+    }
+}
+
+impl LazyIter for NaturalNumbers {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        todo!()
+    }
+
+    fn name(&self) -> &'static str {
+        "NaturalNumbers"
+    }
+
+    fn clone(&self) -> Box<dyn LazyIter> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn id(&self) -> u64 {
+        self.id
+    }
+}
+
