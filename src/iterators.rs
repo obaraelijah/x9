@@ -1,3 +1,4 @@
+use core::sync;
 use std::{hash::Hash, ops::Deref};
 
 use rand::random;
@@ -100,5 +101,30 @@ impl LazyIter for LazyFilter {
 
     fn id(&self) -> u64 {
         self.id
+    }
+}
+
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
+#[derive(Default, Debug)]
+struct Counter(AtomicUsize);
+
+impl Counter {
+    fn new(value: usize) -> Self {
+        Counter(AtomicUsize::new(value))
+    }
+
+    fn value(&self) -> usize {
+        self.0.load(Ordering::SeqCst)
+    }
+
+    fn zero() -> Counter {
+        Counter(AtomicUsize::new(0))
+    }
+}
+
+impl std::fmt::Display for Counter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value())
     }
 }
