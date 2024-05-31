@@ -1,4 +1,3 @@
-use core::sync;
 use std::{hash::Hash, ops::Deref};
 
 use rand::random;
@@ -44,7 +43,7 @@ impl  LazyIter for IterType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct LazyMap {
     inner: IterType,
     f: Function,
@@ -69,6 +68,12 @@ impl LazyIter for LazyMap {
     }
 }
 
+impl std::fmt::Display for LazyMap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
+    }
+}
+
 impl LazyMap {
     pub(crate) fn lisp_res(inner: IterType, f: Function) -> LispResult<Expr> {
         Ok(Expr::LazyIter(Box::new(LazyMap {
@@ -79,7 +84,7 @@ impl LazyMap {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct LazyFilter {
     inner: IterType,
     f: Function,
@@ -101,6 +106,12 @@ impl LazyIter for LazyFilter {
 
     fn id(&self) -> u64 {
         self.id
+    }
+}
+
+impl std::fmt::Display for LazyFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
     }
 }
 
