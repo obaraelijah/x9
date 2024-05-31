@@ -2,11 +2,12 @@ use std::{hash::Hash, ops::Deref};
 
 use rand::random;
 
-use crate::ast::{Expr, Function, LispResult};
+use crate::ast::{Expr, Function, LispResult, SymbolTable};
 
 pub type IterType = Box<dyn LazyIter>;
 
 pub trait LazyIter: std::fmt::Debug + std::fmt::Display + Sync + Send {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>>;
     fn name(&self) -> &'static str;
     fn clone(&self) -> Box<dyn LazyIter>;
     fn id(&self) -> u64;
@@ -25,6 +26,10 @@ impl Clone for Box<dyn LazyIter> {
 }
 
 impl  LazyIter for IterType {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        self.deref().next(symbol_table)
+    }
+
     fn name(&self) -> &'static str {
         self.deref().name()
     }
@@ -46,6 +51,10 @@ pub(crate) struct LazyMap {
 }
 
 impl LazyIter for LazyMap {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        todo!()
+    }
+
     fn name(&self) -> &'static str {
         "Map"
     }
@@ -66,5 +75,30 @@ impl LazyMap {
             f,
             id: random(),
         })))
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct LazyFilter {
+    inner: IterType,
+    f: Function,
+    id: u64,
+}
+
+impl LazyIter for LazyFilter {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        todo!()
+    }
+
+    fn name(&self) -> &'static str {
+        "LazyFilter"
+    }
+
+    fn clone(&self) -> Box<dyn LazyIter> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn id(&self) -> u64 {
+        self.id
     }
 }

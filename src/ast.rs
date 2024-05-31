@@ -1,7 +1,9 @@
 use anyhow::anyhow;
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use im::Vector;
+use parking_lot::RwLock;
 use std::sync::Arc;
+use std::collections::HashMap;
 
 use crate::interner::InternedString;
 use crate::iterators::IterType;
@@ -424,3 +426,8 @@ impl std::fmt::Display for ProgramError {
 pub type LispResult<T> = anyhow::Result<T>;
 
 impl Eq for Expr {}
+
+pub struct SymbolTable {
+    globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
+    locals: Arc<RwLock<HashMap<InternedString, Expr>>>,    
+}
