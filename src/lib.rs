@@ -1,6 +1,6 @@
 pub mod ast;
+pub mod cli;
 mod interner;
 pub mod interpreter;
-pub mod parser;
 pub mod iterators;
-pub mod cli;
+pub mod parser;

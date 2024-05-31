@@ -25,7 +25,7 @@ impl Clone for Box<dyn LazyIter> {
     }
 }
 
-impl  LazyIter for IterType {
+impl LazyIter for IterType {
     fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
         self.deref().next(symbol_table)
     }
@@ -120,9 +120,9 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 #[derive(Default, Debug)]
 struct Counter(AtomicUsize);
 
-impl  Clone for Counter {
+impl Clone for Counter {
     fn clone(&self) -> Self {
-        let value= self.0.load(Ordering::SeqCst);
+        let value = self.0.load(Ordering::SeqCst);
         Counter(AtomicUsize::new(value))
     }
 }

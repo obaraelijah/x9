@@ -2,8 +2,8 @@ use anyhow::anyhow;
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use im::Vector;
 use parking_lot::RwLock;
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::interner::InternedString;
 use crate::iterators::IterType;
@@ -429,5 +429,5 @@ impl Eq for Expr {}
 
 pub struct SymbolTable {
     globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
-    locals: Arc<RwLock<HashMap<InternedString, Expr>>>,    
+    locals: Arc<RwLock<HashMap<InternedString, Expr>>>,
 }
