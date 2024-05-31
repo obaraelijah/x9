@@ -109,6 +109,13 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 #[derive(Default, Debug)]
 struct Counter(AtomicUsize);
 
+impl  Clone for Counter {
+    fn clone(&self) -> Self {
+        let value= self.0.load(Ordering::SeqCst);
+        Counter(AtomicUsize::new(value))
+    }
+}
+
 impl Counter {
     fn new(value: usize) -> Self {
         Counter(AtomicUsize::new(value))
@@ -120,6 +127,10 @@ impl Counter {
 
     fn zero() -> Counter {
         Counter(AtomicUsize::new(0))
+    }
+
+    fn fetch_add_one(&self) -> usize {
+        self.0.fetch_add(1, Ordering::SeqCst)
     }
 }
 
