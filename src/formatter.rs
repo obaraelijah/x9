@@ -1,5 +1,3 @@
-use crate::cli::Options;
-
 enum Token<'input> {
     Iten(&'input str),
     String(&'input str),
