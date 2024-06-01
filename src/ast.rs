@@ -8,6 +8,7 @@ use std::sync::Arc;
 use crate::interner::InternedString;
 use crate::iterators::IterType;
 
+#[macro_export]
 macro_rules! bad_types {
     ($custom:expr) => {
         Err(anyhow!($crate::ast::ProgramError::BadTypes)).with_context(|| $custom)
@@ -365,10 +366,13 @@ impl std::fmt::Display for ByteCompiledFunction {
     }
 }
 
+pub(crate) type X9FunctionPtr = Arc<dyn Fn(Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
+
 #[derive(Clone)]
 pub struct Function {
     pub symbol: InternedString,
     pub minimum_args: usize,
+    f: X9FunctionPtr,
     eval_args: bool,
 }
 
@@ -403,10 +407,11 @@ impl std::fmt::Display for Function {
 }
 
 impl Function {
-    pub fn new(symbol: String, minimum_args: usize, eval_args: bool) -> Self {
+    pub fn new(symbol: String, minimum_args: usize, f: X9FunctionPtr, eval_args: bool) -> Self {
         Self {
             symbol: symbol.into(),
             minimum_args,
+            f,
             eval_args,
         }
     }
