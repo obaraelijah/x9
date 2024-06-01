@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
-use im::Vector;
 use core::cmp::Ordering;
+use im::Vector;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
