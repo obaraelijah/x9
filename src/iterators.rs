@@ -244,10 +244,10 @@ pub(crate) struct Skip {
 
 impl Clone for Skip {
     fn clone(&self) -> Self {
-        Self { 
-            inner: LazyIter::clone(&self.inner), 
-            skipped: self.skipped, 
-            have_skipped: AtomicBool::new(self.have_skipped.load(Ordering::SeqCst)), 
+        Self {
+            inner: LazyIter::clone(&self.inner),
+            skipped: self.skipped,
+            have_skipped: AtomicBool::new(self.have_skipped.load(Ordering::SeqCst)),
         }
     }
 }
@@ -262,6 +262,34 @@ impl Skip {
     }
 }
 
+impl std::fmt::Display for Skip {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Skip<{}, {}>", self.skipped, self.inner,)
+    }
+}
+
 impl LazyIter for Skip {
-    todo!()
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        if !self.have_skipped.load(Ordering::SeqCst) {
+            self.have_skipped.store(true, Ordering::SeqCst);
+            for _ in 0..self.skipped {
+                if let Err(e) = self.inner.next(symbol_table)? {
+                    return Some(Err(e));
+                }
+            }
+        }
+        self.inner.next(symbol_table)
+    }
+
+    fn name(&self) -> &'static str {
+        "Skip"
+    }
+
+    fn clone(&self) -> Box<dyn LazyIter> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn id(&self) -> u64 {
+        random()
+    }
 }
