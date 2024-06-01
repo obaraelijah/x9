@@ -17,10 +17,10 @@ pub struct Options {
 
 impl Default for Options {
     fn default() -> Self {
-        Options { 
+        Options {
             files: Vec::with_capacity(0),
             load_file: false,
-            debugger: false, 
+            debugger: false,
         }
     }
 }

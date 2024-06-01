@@ -366,7 +366,9 @@ impl std::fmt::Display for ByteCompiledFunction {
     }
 }
 
-pub(crate) type X9FunctionPtr = Arc<dyn Fn(Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
+// Smart pointer to a trait object
+pub(crate) type X9FunctionPtr =
+    Arc<dyn Fn(Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
 
 #[derive(Clone)]
 pub struct Function {
