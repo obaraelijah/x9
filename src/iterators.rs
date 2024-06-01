@@ -234,3 +234,34 @@ impl LazyIter for LazyList {
         0
     }
 }
+
+#[derive(Debug)]
+pub(crate) struct Skip {
+    inner: IterType,
+    skipped: usize,
+    have_skipped: AtomicBool,
+}
+
+impl Clone for Skip {
+    fn clone(&self) -> Self {
+        Self { 
+            inner: LazyIter::clone(&self.inner), 
+            skipped: self.skipped, 
+            have_skipped: AtomicBool::new(self.have_skipped.load(Ordering::SeqCst)), 
+        }
+    }
+}
+
+impl Skip {
+    pub(crate) fn lisp_res(skips_left: usize, inner: IterType) -> LispResult<Expr> {
+        Ok(Expr::LazyIter(Box::new(Skip {
+            inner,
+            have_skipped: AtomicBool::new(false),
+            skipped: skips_left,
+        })))
+    }
+}
+
+impl LazyIter for Skip {
+    todo!()
+}
