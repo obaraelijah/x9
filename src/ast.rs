@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use im::Vector;
+use core::cmp::Ordering;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -420,10 +421,25 @@ impl Function {
 }
 
 #[derive(Debug)]
-pub(super) enum ProgramError {
-    BadTypes, //context
+pub(crate) enum ProgramError {
+    BadTypes, // context
+    // InvalidCharacterInSymbol,
+    // CannotStartExprWithNonSymbol,
+    CondNoExecutionPath,
+    CondBadConditionNotEven,
+    DivisionByZero,
+    // FailedToParseInt,
+    // FailedToParseString,
+    NotAFunction(Expr),
+    // NotAList,
+    // NotEnoughArgs(usize),
+    // NotImplementedYet,
+    ExpectedRestSymbol,
+    // UnexpectedEOF,
+    WrongNumberOfArgs(usize),
+    // FailedToParse(String),
+    // Custom(String),
 }
-
 impl std::fmt::Display for ProgramError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
@@ -432,9 +448,35 @@ impl std::fmt::Display for ProgramError {
 
 pub type LispResult<T> = anyhow::Result<T>;
 
-impl Eq for Expr {}
-
 pub struct SymbolTable {
     globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
     locals: Arc<RwLock<HashMap<InternedString, Expr>>>,
+}
+
+impl PartialOrd for Expr {
+    fn partial_cmp(&self, other: &Expr) -> Option<Ordering> {
+        match (self, other) {
+            (Expr::Num(l), Expr::Num(r)) => l.partial_cmp(r),
+            (Expr::Integer(l), Expr::Integer(r)) => l.partial_cmp(r),
+            (Expr::Num(l), Expr::Integer(r)) => l.partial_cmp(&r.to_bigdecimal()),
+            (Expr::Integer(l), Expr::Num(r)) => l.to_bigdecimal().partial_cmp(r),
+            (Expr::String(l), Expr::String(r)) => l.partial_cmp(r),
+            _ => None,
+        }
+    }
+}
+
+impl Eq for Expr {}
+
+impl Ord for Expr {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Expr::Num(l), Expr::Num(r)) => l.cmp(r),
+            (Expr::Integer(l), Expr::Integer(r)) => l.cmp(r),
+            (Expr::Num(l), Expr::Integer(r)) => l.cmp(&r.to_bigdecimal()),
+            (Expr::Integer(l), Expr::Num(r)) => l.to_bigdecimal().cmp(r),
+            (Expr::String(l), Expr::String(r)) => l.cmp(r),
+            _ => Ordering::Less,
+        }
+    }
 }
