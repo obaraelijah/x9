@@ -33,6 +33,7 @@ pub type Num = BigDecimal;
 pub type Dict = im::HashMap<Expr, Expr>;
 pub type Symbol = InternedString;
 
+#[allow(clippy::derive_hash_xor_eq)] // It's probably OK.
 #[derive(Clone, Hash)]
 pub enum Expr {
     Num(Num),
@@ -76,8 +77,8 @@ impl PartialEq for Expr {
 impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expr::String(s) => write!(f, "{}", s),
-            rest => write!(f, "{:?}", rest),
+            Expr::String(s) => write!(f, "{s}"),
+            rest => write!(f, "{rest:?}"),
         }
     }
 }
@@ -85,7 +86,7 @@ impl std::fmt::Display for Expr {
 fn debug_join(exprs: &Vector<Expr>) -> String {
     exprs
         .iter()
-        .map(|s| format!("{:?}", s))
+        .map(|s| format!("{s:?}"))
         .collect::<Vec<String>>()
         .join(" ")
 }
@@ -93,19 +94,19 @@ fn debug_join(exprs: &Vector<Expr>) -> String {
 impl std::fmt::Debug for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expr::Integer(n) => write!(f, "{}", n),
+            Expr::Integer(n) => write!(f, "{n}"),
             Expr::Nil => write!(f, "nil"),
-            Expr::Num(n) => write!(f, "{}", n),
-            Expr::String(s) => write!(f, "\"{}\"", s),
-            Expr::Symbol(s) => write!(f, "{}", s),
-            Expr::Function(ff) => write!(f, "{}", ff),
+            Expr::Num(n) => write!(f, "{n}"),
+            Expr::String(s) => write!(f, "\"{s}\""),
+            Expr::Symbol(s) => write!(f, "{s}"),
+            Expr::Function(ff) => write!(f, "{ff}"),
             Expr::Quote(l) => write!(f, "'({})", debug_join(l)),
-            Expr::Bool(b) => write!(f, "{}", b),
+            Expr::Bool(b) => write!(f, "{b}"),
             Expr::List(l) => write!(f, "({})", debug_join(l)),
             Expr::Tuple(l) => write!(f, "^({})", debug_join(l)),
-            Expr::Dict(l) => write!(f, "{:?}", l),
-            Expr::ByteCompiledFunction(ff) => write!(f, "{}", ff),
-            Expr::LazyIter(i) => write!(f, "{}", i),
+            Expr::Dict(l) => write!(f, "{l:?}"),
+            Expr::ByteCompiledFunction(ff) => write!(f, "{ff}"),
+            Expr::LazyIter(i) => write!(f, "{i}"),
         }
     }
 }
@@ -355,7 +356,7 @@ impl std::fmt::Debug for ByteCompiledFunction {
             self.symbol, self.minimum_args, self.loc
         )?;
         for arg in self.named_args.iter() {
-            write!(f, "{} ", arg)?;
+            write!(f, "{arg}")?;
         }
         write!(f, "], byte_compiled>")
     }
@@ -363,7 +364,7 @@ impl std::fmt::Debug for ByteCompiledFunction {
 
 impl std::fmt::Display for ByteCompiledFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -399,13 +400,13 @@ impl PartialEq for Function {
 
 impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{:?}", self.eval_args)
     }
 }
 
 impl std::fmt::Display for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -442,7 +443,7 @@ pub(crate) enum ProgramError {
 }
 impl std::fmt::Display for ProgramError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
