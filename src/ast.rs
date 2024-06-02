@@ -377,7 +377,10 @@ pub struct Function {
     pub symbol: InternedString,
     pub minimum_args: usize,
     f: X9FunctionPtr,
+    pub named_args: Box<[InternedString]>,
+    extra_arg: Option<InternedString>,
     eval_args: bool,
+    closure: Option<HashMap<InternedString, Expr>>,
 }
 
 use std::hash::{Hash, Hasher};
@@ -385,8 +388,9 @@ use std::hash::{Hash, Hasher};
 impl Hash for Function {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.symbol.hash(state);
-        self.eval_args.hash(state);
         self.minimum_args.hash(state);
+        self.named_args.hash(state);
+        self.eval_args.hash(state);
     }
 }
 
@@ -401,7 +405,14 @@ impl PartialEq for Function {
 
 impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.eval_args)
+        write!(f, "Fn<{}, {}, [ ", self.symbol, self.minimum_args)?;
+        for arg in self.named_args.iter() {
+            write!(f, "{} ", arg)?;
+        }
+        if let Some(extra_arg) = self.extra_arg {
+            write!(f, "& {} ", extra_arg)?;
+        }
+        write!(f, "]>")
     }
 }
 
@@ -417,7 +428,10 @@ impl Function {
             symbol: symbol.into(),
             minimum_args,
             f,
+            named_args: Vec::with_capacity(0).into_boxed_slice(),
+            extra_arg: None,
             eval_args,
+            closure: None,
         }
     }
 }
