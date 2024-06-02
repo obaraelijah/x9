@@ -466,6 +466,7 @@ pub type LispResult<T> = anyhow::Result<T>;
 
 impl std::ops::Rem<&Expr> for Expr {
     type Output = LispResult<Expr>;
+    
     fn rem(self, other: &Expr) -> LispResult<Expr> {
         match (&self, &other) {
             (Expr::Num(l), Expr::Num(r)) => Ok(Expr::num(l % r)),
@@ -476,6 +477,16 @@ impl std::ops::Rem<&Expr> for Expr {
                 "Remainder requires left and right are num types, was given {:?} % {:?}",
                 &self, &other
             )),
+        }
+    }
+}
+
+impl std::ops::Sub<&Expr> for Expr {
+    type Output = LispResult<Expr>;
+
+    fn sub(self, other: &Expr) -> LispResult<Expr> {
+        match (&self, &other) {
+            
         }
     }
 }
