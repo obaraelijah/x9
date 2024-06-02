@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use core::cmp::Ordering;
 use im::Vector;
@@ -464,10 +464,22 @@ impl std::fmt::Display for ProgramError {
 
 pub type LispResult<T> = anyhow::Result<T>;
 
-pub struct SymbolTable {
-    globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
-    locals: Arc<RwLock<HashMap<InternedString, Expr>>>,
+impl std::ops::Rem<&Expr> for Expr {
+    type Output = LispResult<Expr>;
+    fn rem(self, other: &Expr) -> LispResult<Expr> {
+        match (&self, &other) {
+            (Expr::Num(l), Expr::Num(r)) => Ok(Expr::num(l % r)),
+            (Expr::Integer(l), Expr::Integer(r)) => Ok(Expr::num(l % r)),
+            (Expr::Integer(l), Expr::Num(r)) => Ok(Expr::num(l.to_bigdecimal() % r)),
+            (Expr::Num(l), Expr::Integer(r)) => Ok(Expr::num(l % r.to_bigdecimal())),
+            _ => bad_types!(format!(
+                "Remainder requires left and right are num types, was given {:?} % {:?}",
+                &self, &other
+            )),
+        }
+    }
 }
+
 
 impl PartialOrd for Expr {
     fn partial_cmp(&self, other: &Expr) -> Option<Ordering> {
@@ -495,4 +507,9 @@ impl Ord for Expr {
             _ => Ordering::Less,
         }
     }
+}
+
+pub struct SymbolTable {
+    globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
+    locals: Arc<RwLock<HashMap<InternedString, Expr>>>,
 }
