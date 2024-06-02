@@ -33,7 +33,7 @@ pub type Num = BigDecimal;
 pub type Dict = im::HashMap<Expr, Expr>;
 pub type Symbol = InternedString;
 
-#[allow(clippy::derive_hash_xor_eq)] // It's probably OK.
+#[allow(clippy::derived_hash_with_manual_eq)] // It's probably OK.
 #[derive(Clone, Hash)]
 pub enum Expr {
     Num(Num),
@@ -394,7 +394,8 @@ impl PartialEq for Function {
     fn eq(&self, other: &Self) -> bool {
         // TODO: See if this is an issue. This should only appear in
         // one code generation unit (i.e. this crate), so it should be safe.
-        todo!()
+        #[allow(ambiguous_wide_pointer_comparisons)]
+        Arc::ptr_eq(&self.f, &other.f)
     }
 }
 
