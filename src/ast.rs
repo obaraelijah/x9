@@ -466,7 +466,7 @@ pub type LispResult<T> = anyhow::Result<T>;
 
 impl std::ops::Rem<&Expr> for Expr {
     type Output = LispResult<Expr>;
-    
+
     fn rem(self, other: &Expr) -> LispResult<Expr> {
         match (&self, &other) {
             (Expr::Num(l), Expr::Num(r)) => Ok(Expr::num(l % r)),
@@ -486,7 +486,17 @@ impl std::ops::Sub<&Expr> for Expr {
 
     fn sub(self, other: &Expr) -> LispResult<Expr> {
         match (&self, &other) {
-            
+            (Expr::Num(l), Expr::Num(r)) => Ok(Expr::num(l - r)),
+            (Expr::Integer(l), Expr::Integer(r)) => match l.checked_sub(*r) {
+                Some(res) => Ok(Expr::num(res)),
+                None => Ok(Expr::num(l.to_bigdecimal() - r.to_bigdecimal())),
+            },
+            (Expr::Integer(l), Expr::Num(r)) => Ok(Expr::num(l.to_bigdecimal() - r)),
+            (Expr::Num(l), Expr::Integer(r)) => Ok(Expr::num(l - r.to_bigdecimal())),
+            _ => bad_types!(format!(
+                "Subtraction between these types doesn't make sense: {} - {}",
+                &self, other
+            )),
         }
     }
 }
