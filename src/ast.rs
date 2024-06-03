@@ -546,7 +546,6 @@ impl std::ops::Sub<&Expr> for Expr {
     }
 }
 
-
 impl PartialOrd for Expr {
     fn partial_cmp(&self, other: &Expr) -> Option<Ordering> {
         match (self, other) {
