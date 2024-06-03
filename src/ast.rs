@@ -335,6 +335,7 @@ pub struct ByteCompiledFunction {
     pub minimum_args: usize,
     named_args: Box<[Symbol]>,
     pub loc: usize,
+    // TODO: Handle closures
 }
 
 impl ByteCompiledFunction {
@@ -574,6 +575,7 @@ impl Ord for Expr {
     }
 }
 
+#[derive(Clone, Debug, Default)]
 pub struct SymbolTable {
     globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
     locals: Arc<RwLock<HashMap<InternedString, Expr>>>,
