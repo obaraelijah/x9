@@ -456,6 +456,7 @@ pub(crate) enum ProgramError {
     // FailedToParse(String),
     // Custom(String),
 }
+
 impl std::fmt::Display for ProgramError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
@@ -476,6 +477,50 @@ impl std::ops::Rem<&Expr> for Expr {
             _ => bad_types!(format!(
                 "Remainder requires left and right are num types, was given {:?} % {:?}",
                 &self, &other
+            )),
+        }
+    }
+}
+
+impl std::ops::Add<&Expr> for Expr {
+    type Output = LispResult<Expr>;
+    #[inline]
+    fn add(self, other: &Expr) -> LispResult<Expr> {
+        match (&self, &other) {
+            (Expr::Num(l), Expr::Num(r)) => Ok(Expr::num(l + r)),
+            (Expr::Integer(l), Expr::Integer(r)) => match l.checked_add(*r) {
+                Some(res) => Ok(Expr::num(res)),
+                None => Ok(Expr::num(l.to_bigdecimal() + r.to_bigdecimal())),
+            },
+            (Expr::Integer(l), Expr::Num(r)) => Ok(Expr::num(l.to_bigdecimal() + r)),
+            (Expr::Num(l), Expr::Integer(r)) => Ok(Expr::num(l + r.to_bigdecimal())),
+            (Expr::String(l), Expr::String(r)) => Ok(Expr::string(l.to_string() + r)),
+            (Expr::Num(l), Expr::String(r)) => Ok(Expr::string(format!("{}{}", l, r))),
+            (Expr::String(l), Expr::Num(r)) => Ok(Expr::string(format!("{}{}", l, r))),
+            (Expr::String(l), Expr::Integer(r)) => Ok(Expr::string(format!("{}{}", l, r))),
+            (Expr::Integer(l), Expr::String(r)) => Ok(Expr::string(format!("{}{}", l, r))),
+            (Expr::List(l), Expr::List(r)) => {
+                let mut res = l.clone();
+                res.append(r.clone());
+                Ok(Expr::List(res))
+            }
+            (Expr::Tuple(l), Expr::Tuple(r)) => {
+                let mut res = l.clone();
+                res.append(r.clone());
+                Ok(Expr::Tuple(res))
+            }
+            (Expr::List(l), Expr::Nil) => Ok(Expr::List(l.clone())),
+            (Expr::Nil, Expr::List(r)) => Ok(Expr::List(r.clone())),
+            (Expr::Nil, Expr::Nil) => Ok(Expr::Nil),
+            (Expr::List(l), Expr::Tuple(r)) => {
+                Ok(Expr::Tuple(l.iter().chain(r).cloned().collect()))
+            }
+            (Expr::Tuple(l), Expr::List(r)) => {
+                Ok(Expr::Tuple(l.iter().chain(r).cloned().collect()))
+            }
+            _ => bad_types!(format!(
+                "Addition between these types doesn't make sense: {} + {}",
+                &self, other
             )),
         }
     }
