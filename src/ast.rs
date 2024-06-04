@@ -334,7 +334,7 @@ impl Expr {
     pub(crate) fn get_symbol(&self) -> LispResult<Symbol> {
         match self {
             Expr::Symbol(s) => Ok(*s),
-            _ => bad_types!("symbol", self)
+            _ => bad_types!("symbol", self),
         }
     }
 
@@ -364,6 +364,28 @@ impl Expr {
             _ => return bad_types!("collection (list, tuple, record, etc)", self),
         };
         Ok(len)
+    }
+
+    pub(crate) fn is_iterator(&self) -> bool {
+        match self {
+            Expr::LazyIter(_) => true,
+            _ => false,
+        }
+    }
+
+    pub(crate) fn get_iterator(&self) -> LispResult<IterType> {
+        match self {
+            Expr::LazyIter(l) => Ok(l.clone()),
+            _ => bad_types!("iterator", self),
+        }
+    }
+
+    pub(crate) fn symbol_matches(&self, sym: &'static str) -> bool {
+        if let Expr::Symbol(s) = self {
+            s == sym
+        } else {
+            false
+        }
     }
 }
 
