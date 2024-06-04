@@ -109,6 +109,7 @@ impl std::fmt::Debug for Expr {
             Expr::Dict(l) => write!(f, "{l:?}"),
             Expr::ByteCompiledFunction(ff) => write!(f, "{ff}"),
             Expr::LazyIter(i) => write!(f, "{i}"),
+            Expr::Record(l) => write!(f, "{l:?}"),
         }
     }
 }
@@ -252,6 +253,7 @@ impl Expr {
             Expr::Dict(_) => "map",
             Expr::ByteCompiledFunction(_) => "func",
             Expr::LazyIter(_) => "iterator",
+            Expr::Record(_) => "record",
         }
     }
 
@@ -332,7 +334,6 @@ impl Expr {
     pub(crate) fn get_symbol(&self) -> LispResult<Symbol> {
         match self {
             Expr::Symbol(s) => Ok(*s),
-            Expr::Record(r) => Ok(InternedString::new(r.get_type_str())),
             _ => bad_types!("symbol", self)
         }
     }
@@ -347,6 +348,7 @@ impl Expr {
     pub fn get_symbol_string(&self) -> LispResult<InternedString> {
         match self {
             Expr::Symbol(s) => Ok(*s),
+            Expr::Record(r) => Ok(InternedString::new(r.get_type_str())),
             _ => bad_types!("symbol", self),
         }
     }

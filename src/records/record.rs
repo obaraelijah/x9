@@ -1,14 +1,11 @@
-use crate::ast::{Expr, LispResult, SymbolTable};
-use anyhow::bail;
 use core::hash::Hash;
 use core::hash::Hasher;
-use im::Vector;
 use std::fmt;
 use std::ops::Deref;
 
 pub(crate) type RecordType = Box<dyn Record>;
 
-pub trait Record: Sync + Send {
+pub trait Record: Sync + Send  {
     fn display(&self) -> String;
     fn debug(&self) -> String;
     fn clone(&self) -> RecordType;
@@ -17,6 +14,14 @@ pub trait Record: Sync + Send {
     }
     fn is_equal(&self, _other: &dyn Record) -> bool {
         false
+    }
+
+    /// Return the type name for nice help messages
+    fn type_name(&self) -> String;
+
+    // This method is used for bad_types error handling
+    fn get_type_str(&self) -> String {
+        self.type_name()
     }
 }
 
