@@ -327,6 +327,39 @@ impl Expr {
             _ => bad_types!("func", self),
         }
     }
+    pub(crate) fn get_symbol(&self) -> LispResult<Symbol> {
+        match self {
+            Expr::Symbol(s) => Ok(*s),
+            _ => bad_types!("symbol", self)
+        }
+    }
+
+    pub(crate) fn is_symbol_underscore(&self) -> bool {
+        self.get_symbol_string()
+            .ok()
+            .map(|s| s.to_string() == "_")
+            .unwrap_or(false)
+    }
+
+    pub fn get_symbol_string(&self) -> LispResult<InternedString> {
+        match self {
+            Expr::Symbol(s) => Ok(*s),
+            _ => bad_types!("symbol", self),
+        }
+    }
+
+    pub(crate) fn len(&self, symbol_table: &SymbolTable) -> LispResult<usize> {
+        let len = match self {
+            Expr::List(l) => l.len(),
+            Expr::Tuple(l) => l.len(),
+            Expr::Quote(l) => l.len(),
+            Expr::Dict(m) => m.len(),
+            Expr::String(s) => s.len(),
+            Expr::Symbol(s) => s.len(),
+            _ => return bad_types!("collection (list, tuple, record, etc)", self),
+        };
+        Ok(len)
+    }
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]
