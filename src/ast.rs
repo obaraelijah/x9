@@ -1,3 +1,4 @@
+use crate::records::RecordType;
 use anyhow::{anyhow, Context};
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use core::cmp::Ordering;
@@ -49,6 +50,7 @@ pub enum Expr {
     Dict(Dict),
     ByteCompiledFunction(ByteCompiledFunction),
     LazyIter(IterType),
+    Record(RecordType),
 }
 
 impl PartialEq for Expr {
@@ -330,6 +332,7 @@ impl Expr {
     pub(crate) fn get_symbol(&self) -> LispResult<Symbol> {
         match self {
             Expr::Symbol(s) => Ok(*s),
+            Expr::Record(r) => Ok(InternedString::new(r.get_type_str())),
             _ => bad_types!("symbol", self)
         }
     }

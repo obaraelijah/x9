@@ -4,4 +4,5 @@ pub mod formatter;
 pub mod interner;
 mod iterators;
 pub mod parser;
+mod records;
 pub mod vm;
