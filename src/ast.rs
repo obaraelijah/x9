@@ -495,6 +495,41 @@ impl Function {
             closure: None,
         }
     }
+
+    pub fn new_named_args(
+        symbol: InternedString,
+        minimum_args: usize,
+        f: X9FunctionPtr,
+        named_args: Vec<InternedString>,
+        eval_args: bool,
+        closure: HashMap<InternedString, Expr>,
+    ) -> LispResult<Self> {
+        let extra_arg_symbol = InternedString::extra_arg_symbol();
+
+        let (named_args, extra_arg) =
+            if let Some(pos) = named_args.iter().position(|e| *e == extra_arg_symbol) {
+                debug_assert!(named_args[pos] == extra_arg_symbol);
+                let mut named_args = named_args;
+                let rest = named_args.split_off(pos + 1);
+                let extra_arg = *rest
+                    .get(0)
+                    .ok_or_else(|| anyhow!(ProgramError::ExpectedRestSymbol))?;
+                named_args.pop();
+                (named_args, Some(extra_arg))
+            } else {
+                (named_args, None)
+            };
+
+        Ok(Self {
+            symbol,
+            minimum_args,
+            f,
+            named_args: named_args.into_boxed_slice(),
+            extra_arg,
+            eval_args,
+            closure: Some(closure),
+        })
+    }
 }
 
 #[derive(Debug)]

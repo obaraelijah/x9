@@ -6,16 +6,16 @@ pub(crate) struct FileRecord {
 
 impl Default for FileRecord {
     fn default() -> Self {
-        Self { 
-            path: "<no path>".to_string(), 
-            file: None, 
+        Self {
+            path: "<no path>".to_string(),
+            file: None,
         }
     }
 }
 
 impl FileRecord {
     fn new(f: std::fs::File, path: String) -> FileRecord {
-        FileRecord {  
+        FileRecord {
             file: Some(f),
             path,
         }

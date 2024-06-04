@@ -15,9 +15,9 @@ impl Default for ByteCodeCompiler {
 
 impl ByteCodeCompiler {
     pub fn new() -> Self {
-        ByteCodeCompiler { 
+        ByteCodeCompiler {
             label_map: HashMap::new(),
-            label_count: 0, 
+            label_count: 0,
         }
     }
 }

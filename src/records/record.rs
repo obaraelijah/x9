@@ -6,16 +6,12 @@ use std::ops::Deref;
 use crate::ast::{Expr, LispResult, SymbolTable};
 pub(crate) type RecordType = Box<dyn Record>;
 
-pub trait Record: Sync + Send  {
+pub trait Record: Sync + Send {
     /// Call a method on this record.
     /// (.method_name <rec> arg1 arg2 arg3)
     /// Becomes:
     /// (&self: <rec>, sym: "method_name", args: vector![arg1, arg2, arg3])
-    fn call_method(
-        &self,
-        sym: &str,
-        symbol_table: &SymbolTable,
-    ) -> LispResult<Expr>;
+    fn call_method(&self, sym: &str, symbol_table: &SymbolTable) -> LispResult<Expr>;
     fn display(&self) -> String;
     fn debug(&self) -> String;
     fn clone(&self) -> RecordType;
