@@ -728,6 +728,36 @@ impl std::ops::Mul<&Expr>  for Expr{
     }
 }
 
+impl std::ops::Div<&Expr> for Expr {
+    type Output = LispResult<Expr>;
+
+    fn div(self, other: &Expr) -> LispResult<Expr> {
+        match (&self, &other) {
+            (Expr::Num(l), Expr::Num(r)) => {
+                if *r == BigDecimal::zero() {
+                    bail!(ProgramError::DivisionByZero);
+                } else {
+                    Ok(Expr::num(l / r))
+                }
+            }
+            (_, Expr::Integer(0)) => bail!(ProgramError::DivisionByZero),
+            (Expr::Integer(l), Expr::Integer(r)) => {
+                if *r == 0 {
+                    bail!(ProgramError::DivisionByZero);
+                }
+                match (l / r, l % r) {
+                    (res, 0) => Ok(Expr::Integer(res)),
+                    _ => Ok(Expr::num(l.to_bigdecimal() / r.to_bigdecimal())),
+                }
+            }
+            _ => bad_types!(format!(
+                "Division between these types doesn't make sense: {} / {}",
+                &self, other
+            )),
+        }
+    }
+}
+
 impl PartialOrd for Expr {
     fn partial_cmp(&self, other: &Expr) -> Option<Ordering> {
         match (self, other) {
