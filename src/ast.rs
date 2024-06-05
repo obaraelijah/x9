@@ -548,11 +548,7 @@ impl Function {
     }
 
     // Evaluating & executes a function with a given set of arguments
-    pub(crate) fn call_fn(
-        &self,
-        args: Vector<Expr>,
-        symbol_table: &SymbolTable,
-    ) ->Result<()>{
+    pub(crate) fn call_fn(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> Result<()> {
         if self.minimum_args > args.len() {
             let args_joined = args.iter().join(" ");
             let args_pretty = if args_joined.is_empty() {
@@ -685,7 +681,7 @@ impl std::ops::Sub<&Expr> for Expr {
     }
 }
 
-impl std::ops::Mul<&Expr>  for Expr{
+impl std::ops::Mul<&Expr> for Expr {
     type Output = LispResult<Expr>;
 
     fn mul(self, other: &Expr) -> LispResult<Expr> {
@@ -720,7 +716,7 @@ impl std::ops::Mul<&Expr>  for Expr{
                     ))
                 }
             }
-            _ =>  bad_types!(format!(
+            _ => bad_types!(format!(
                 "Multiplication between these types doesn't make sense: {} * {}",
                 &self, other
             )),
