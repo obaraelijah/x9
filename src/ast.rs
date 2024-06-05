@@ -685,6 +685,36 @@ impl std::ops::Sub<&Expr> for Expr {
     }
 }
 
+impl std::ops::Mul<&Expr>  for Expr{
+    type Output = LispResult<Expr>;
+
+    fn mul(self, other: &Expr) -> LispResult<Expr> {
+        match (&self, &other) {
+            (Expr::Num(l), Expr::Num(r)) => Ok(Expr::num(l * r)),
+            (Expr::Integer(l), Expr::Integer(r)) => match l.checked_mul(*r) {
+                Some(res) => Ok(Expr::num(res)),
+                None => Ok(Expr::Num(l.to_bigdecimal() * r.to_bigdecimal())), // res is larger than i64
+            },
+            (Expr::Integer(l), Expr::Num(r)) => Ok(Expr::num(l.to_bigdecimal() * r)),
+            (Expr::Num(l), Expr::Integer(r)) => Ok(Expr::num(l * r.to_bigdecimal())),
+            (Expr::String(l), Expr::Integer(r)) => {
+                if *r < 0 {
+                    bad_types!(format!(
+                        "Repeating a string negative times doesn't make sense: {} * {}",
+                        &self, other
+                    ))
+                } else {
+                    Ok(Expr::string(l.to_string().repeat(*r as usize)))
+                }
+            }
+            _ =>  bad_types!(format!(
+                "Multiplication between these types doesn't make sense: {} * {}",
+                &self, other
+            )),
+        }
+    }
+}
+
 impl PartialOrd for Expr {
     fn partial_cmp(&self, other: &Expr) -> Option<Ordering> {
         match (self, other) {
