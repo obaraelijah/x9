@@ -750,6 +750,14 @@ impl std::ops::Div<&Expr> for Expr {
                     _ => Ok(Expr::num(l.to_bigdecimal() / r.to_bigdecimal())),
                 }
             }
+            (Expr::Num(l), Expr::Integer(r)) => Ok(Expr::num(l / r.to_bigdecimal())),
+            (Expr::Integer(l), Expr::Num(r)) => {
+                if *r == BigDecimal::zero() {
+                    bail!(ProgramError::DivisionByZero)
+                } else {
+                    Ok(Expr::num(l.to_bigdecimal() / r))
+                }
+            }
             _ => bad_types!(format!(
                 "Division between these types doesn't make sense: {} / {}",
                 &self, other
