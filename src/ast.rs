@@ -1,6 +1,6 @@
 use crate::records::RecordType;
 use anyhow::{anyhow, bail, Context, Result};
-use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
+use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive, Zero};
 use core::cmp::Ordering;
 use im::Vector;
 use itertools::Itertools;
@@ -705,6 +705,19 @@ impl std::ops::Mul<&Expr>  for Expr{
                     ))
                 } else {
                     Ok(Expr::string(l.to_string().repeat(*r as usize)))
+                }
+            }
+
+            (Expr::String(l), Expr::Num(r)) => {
+                if *r >= BigDecimal::zero() {
+                    Ok(Expr::string(
+                        l.to_string().repeat(Expr::num(r.clone()).get_usize()?),
+                    ))
+                } else {
+                    bad_types!(format!(
+                        "Repeating a string negative times doesn't make sense: {} * {}",
+                        &self, other
+                    ))
                 }
             }
             _ =>  bad_types!(format!(
