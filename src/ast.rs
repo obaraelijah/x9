@@ -1,8 +1,9 @@
 use crate::records::RecordType;
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, bail, Context, Result};
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
 use core::cmp::Ordering;
 use im::Vector;
+use itertools::Itertools;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -477,6 +478,21 @@ impl std::fmt::Debug for Function {
     }
 }
 
+macro_rules! try_collect {
+    ($args:expr, $symbol_table:expr) => {{
+        // Clone the list of arguments to avoid modifying the original list directly
+        let mut args_clone = $args;
+
+        // Iterate over each argument
+        for arg in args_clone.iter_mut() {
+            // Evaluate the argument using the provided symbol table
+            // If evaluation fails, propagate the error using the `?` operator
+            *arg = arg.eval(&$symbol_table)?;
+        }
+        args_clone
+    }};
+}
+
 impl std::fmt::Display for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
@@ -530,6 +546,33 @@ impl Function {
             closure: Some(closure),
         })
     }
+
+    // Evaluating & executes a function with a given set of arguments
+    pub(crate) fn call_fn(
+        &self,
+        args: Vector<Expr>,
+        symbol_table: &SymbolTable,
+    ) ->Result<()>{
+        if self.minimum_args > args.len() {
+            let args_joined = args.iter().join(" ");
+            let args_pretty = if args_joined.is_empty() {
+                "<nothing>".to_string()
+            } else {
+                args_joined
+            };
+            bail!(anyhow!(
+                "Too few args supplied for {}. Expected {}, was given {} of length {}",
+                &self,
+                self.minimum_args,
+                args_pretty,
+                args.len()
+            ));
+        }
+        // Handle closures
+        // let closure;
+        // let mut symbol_table = symbol_table;
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -580,7 +623,7 @@ impl std::ops::Rem<&Expr> for Expr {
 
 impl std::ops::Add<&Expr> for Expr {
     type Output = LispResult<Expr>;
-    #[inline]
+
     fn add(self, other: &Expr) -> LispResult<Expr> {
         match (&self, &other) {
             (Expr::Num(l), Expr::Num(r)) => Ok(Expr::num(l + r)),
