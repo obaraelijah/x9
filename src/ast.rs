@@ -804,6 +804,8 @@ impl Expr {
     }
 }
 
+use std::sync::Mutex;
+
 #[derive(Debug, Clone, Default)]
 struct Doc {
     docs: HashMap<String, String>,
@@ -821,4 +823,9 @@ impl Doc {
 pub struct SymbolTable {
     globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
     locals: Arc<RwLock<HashMap<InternedString, Expr>>>,
+    docs: Arc<Mutex<Doc>>,
+}
+
+impl SymbolTable {
+    // todo()!
 }
