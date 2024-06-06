@@ -790,6 +790,20 @@ impl Ord for Expr {
     }
 }
 
+impl Expr {
+    pub(crate) fn call_fn(
+        &self,
+        args: Vector<Expr>,
+        symbol_table: &SymbolTable,
+    ) -> Result<()>{
+        match self {
+            Expr::Function(f) => f.call_fn(args, symbol_table),
+            _ => bail!(ProgramError::NotAFunction(self.clone())),
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct SymbolTable {
     globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
