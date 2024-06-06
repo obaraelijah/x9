@@ -804,6 +804,19 @@ impl Expr {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+struct Doc {
+    docs: HashMap<String, String>,
+    order: Vec<String>,
+}
+
+impl Doc {
+    fn add(&mut self, name: String, doc: String) {
+        self.docs.insert(name.clone(), doc);
+        self.order.push(name)
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct SymbolTable {
     globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
