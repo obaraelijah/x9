@@ -7,6 +7,7 @@ use itertools::Itertools;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::thread::JoinHandle;
 
 use crate::interner::InternedString;
 use crate::iterators::IterType;
@@ -819,7 +820,13 @@ impl Doc {
 pub struct SymbolTable {
     globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
     locals: Arc<RwLock<HashMap<InternedString, Expr>>>,
+    fn_join_handles: Arc<RwLock<Vec<JoinHandle<LispResult<Expr>>>>>,
     docs: Arc<Mutex<Doc>>,
+     // TODO: Should functions be magic like this?
+    // Future Dave: magic means we special case adding
+    // symbols to the table whether or not a function is calling.
+    // So named arguments last only as long as the function calling.
+    func_locals: HashMap<InternedString, Expr>,
 }
 
 impl SymbolTable {
