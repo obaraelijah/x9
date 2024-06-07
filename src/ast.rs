@@ -831,7 +831,7 @@ pub struct SymbolTable {
     locals: Arc<RwLock<HashMap<InternedString, Expr>>>,
     fn_join_handles: Arc<RwLock<Vec<JoinHandle<LispResult<Expr>>>>>,
     docs: Arc<Mutex<Doc>>,
-     // TODO: Should functions be magic like this?
+    // TODO: Should functions be magic like this?
     // Future Dave: magic means we special case adding
     // symbols to the table whether or not a function is calling.
     // So named arguments last only as long as the function calling.
@@ -843,7 +843,7 @@ impl SymbolTable {
         globals: Vec<(String, Expr)>,
         doc_order: Vec<(String, String)>,
     ) -> SymbolTable {
-        SymbolTable { 
+        SymbolTable {
             globals: Arc::new(RwLock::new(
                 globals
                     .into_iter()
@@ -851,7 +851,7 @@ impl SymbolTable {
                     .collect(),
             )),
             fn_join_handles: Default::default(),
-            locals: Default::default(), 
+            locals: Default::default(),
             docs: Arc::new(Mutex::new(Doc::with_globals(doc_order))),
             func_locals: Default::default(),
         }
