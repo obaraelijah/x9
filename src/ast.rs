@@ -810,6 +810,15 @@ struct Doc {
 }
 
 impl Doc {
+    fn with_globals(v: Vec<(String, String)>) -> Self {
+        let mut docs = HashMap::new();
+        for (name, doc) in v.iter().cloned() {
+            docs.insert(name, doc);
+        }
+        let order = v.into_iter().map(|(name, _)| name).collect();
+        Doc { docs, order }
+    }
+
     fn add(&mut self, name: String, doc: String) {
         self.docs.insert(name.clone(), doc);
         self.order.push(name)
@@ -830,5 +839,21 @@ pub struct SymbolTable {
 }
 
 impl SymbolTable {
-    // todo()!
+    pub(crate) fn with_globals(
+        globals: Vec<(String, Expr)>,
+        doc_order: Vec<(String, String)>,
+    ) -> SymbolTable {
+        SymbolTable { 
+            globals: Arc::new(RwLock::new(
+                globals
+                    .into_iter()
+                    .map(|(s, e)| (InternedString::new(s), e))
+                    .collect(),
+            )),
+            fn_join_handles: Default::default(),
+            locals: Default::default(), 
+            docs: Arc::new(Mutex::new(Doc::with_globals(doc_order))),
+            func_locals: Default::default(),
+        }
+    }
 }
