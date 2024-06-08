@@ -856,4 +856,16 @@ impl SymbolTable {
             func_locals: Default::default(),
         }
     }
+
+    pub(crate) fn add_join_handle(&self, j: JoinHandle<LispResult<Expr>>) {
+        self.fn_join_handles.write().push(j);
+    }
+
+    pub fn wait_on_threads(&mut self) {
+        self.fn_join_handles.write().drain(..).for_each(|j| {
+            if let Err(e) = j.join() {
+                eprintln!("Failed to join: {:?}", e);
+            }
+        })
+    }
 }
