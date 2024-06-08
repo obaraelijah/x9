@@ -868,4 +868,12 @@ impl SymbolTable {
             }
         })
     }
+
+    pub(crate) fn symbol_exists(&self, sym: &InternedString) -> bool {
+        todo!()
+    }
+
+    pub(crate) fn add_symbol(&self, sym: InternedString, value: Expr) {
+        self.locals.write().insert(sym, value);
+    }
 }
