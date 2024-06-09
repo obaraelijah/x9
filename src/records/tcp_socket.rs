@@ -9,9 +9,9 @@ pub(crate) struct TcpListenerRecord {
 
 impl Default for TcpListenerRecord {
     fn default() -> Self {
-        TcpListenerRecord { 
-            tcp_listener: None, 
-            id: rand::random(), 
+        TcpListenerRecord {
+            tcp_listener: None,
+            id: rand::random(),
         }
     }
 }
