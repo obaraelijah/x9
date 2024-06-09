@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
-use crate::ast::Expr;
+use crate::ast::{Expr, LispResult};
 
 pub(crate) struct DictRecord(HashMap<Expr, Expr>);
 
 impl DictRecord {
-    todo!()
+    fn init() -> LispResult<Self> {
+        todo!()
+    }
 }
