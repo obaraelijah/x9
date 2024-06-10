@@ -1,5 +1,5 @@
 use crate::records::RecordType;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, Context};
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive, Zero};
 use core::cmp::Ordering;
 use im::Vector;
@@ -544,7 +544,11 @@ impl Function {
     }
 
     // Evaluating & executes a function with a given set of arguments
-    pub(crate) fn call_fn(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    pub(crate) fn call_fn(
+        &self,
+        args: Vector<Expr>,
+        symbol_table: &SymbolTable,
+    ) -> LispResult<Expr> {
         if self.minimum_args > args.len() {
             let args_joined = args.iter().join(" ");
             let args_pretty = if args_joined.is_empty() {
@@ -586,13 +590,13 @@ impl Function {
             args
         };
 
-         // Add local variables to symbol table
+        // Add local variables to symbol table
         let new_sym =
-        symbol_table.with_locals(self.named_args.as_ref(), self.extra_arg, args.clone());
+            symbol_table.with_locals(self.named_args.as_ref(), self.extra_arg, args.clone());
 
-         // Call the function
-         (self.f)(args.clone(), &new_sym)
-         .with_context(|| format!("Error in {}, with args {}", &self, format_args(&args)))
+        // Call the function
+        (self.f)(args.clone(), &new_sym)
+            .with_context(|| format!("Error in {}, with args {}", &self, format_args(&args)))
     }
 }
 
@@ -918,7 +922,7 @@ impl SymbolTable {
         //     func_locals: ,
         //     ..self.clone()
         // }
-    }   
+    }
 
     pub(crate) fn symbol_exists(&self, sym: &InternedString) -> bool {
         todo!()
@@ -949,7 +953,6 @@ impl SymbolTable {
         copy
     }
 }
-
 
 fn format_args(args: &Vector<Expr>) -> String {
     // let mut res = String::new();
