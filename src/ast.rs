@@ -826,6 +826,11 @@ impl Expr {
             _ => bail!(ProgramError::NotAFunction(self.clone())),
         }
     }
+
+    pub fn eval(&self, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        let res = todo!();
+        Ok(res)
+    }
 }
 
 use std::sync::Mutex;
@@ -921,6 +926,27 @@ impl SymbolTable {
 
     pub(crate) fn add_symbol(&self, sym: InternedString, value: Expr) {
         self.locals.write().insert(sym, value);
+    }
+
+    pub(crate) fn with_locals(
+        &self,
+        symbols: &[InternedString],
+        extra_args: Option<InternedString>,
+        values: Vector<Expr>,
+    ) -> Self {
+        let mut copy = self.clone();
+
+        let (left, rest) = values.split_at(symbols.len());
+
+        for (key, value) in symbols.iter().zip(left) {
+            copy.func_locals.insert(*key, value);
+        }
+
+        if let Some(rest_sym) = extra_args {
+            copy.func_locals.insert(rest_sym, Expr::Tuple(rest));
+        }
+
+        copy
     }
 }
 
