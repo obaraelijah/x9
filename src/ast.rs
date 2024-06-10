@@ -549,7 +549,7 @@ impl Function {
     }
 
     // Evaluating & executes a function with a given set of arguments
-    pub(crate) fn call_fn(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> Result<()> {
+    pub(crate) fn call_fn(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
         if self.minimum_args > args.len() {
             let args_joined = args.iter().join(" ");
             let args_pretty = if args_joined.is_empty() {
@@ -566,8 +566,13 @@ impl Function {
             ));
         }
         // Handle closures
-        // let closure;
-        // let mut symbol_table = symbol_table;
+        let closure;
+        let mut symbol_table = symbol_table;
+
+        if let Some(close) = &self.closure {
+            closure = Some(symbol_table.with_closure(close));
+            symbol_table = closure.as_ref().unwrap();
+        }
         Ok(())
     }
 }
@@ -792,12 +797,15 @@ impl Ord for Expr {
 }
 
 impl Expr {
-    pub(crate) fn call_fn(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> Result<()> {
+    pub(crate) fn call_fn(
+        &self,
+        args: Vector<Expr>,
+        symbol_table: &SymbolTable,
+    ) -> LispResult<Expr> {
         match self {
             Expr::Function(f) => f.call_fn(args, symbol_table),
             _ => bail!(ProgramError::NotAFunction(self.clone())),
         }
-        Ok(())
     }
 }
 
@@ -868,6 +876,21 @@ impl SymbolTable {
             }
         })
     }
+
+    pub(crate) fn with_closure(&self, other: &HashMap<InternedString, Expr>) -> SymbolTable {
+        let mut new = self.clone();
+        new.func_locals = self
+            .func_locals
+            .iter()
+            .chain(other)
+            .map(|(k, v)| (*k, v.clone()))
+            .collect();
+        new
+        // SymbolTable {
+        //     func_locals: ,
+        //     ..self.clone()
+        // }
+    }   
 
     pub(crate) fn symbol_exists(&self, sym: &InternedString) -> bool {
         todo!()
