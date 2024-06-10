@@ -481,13 +481,8 @@ impl std::fmt::Debug for Function {
 
 macro_rules! try_collect {
     ($args:expr, $symbol_table:expr) => {{
-        // Clone the list of arguments to avoid modifying the original list directly
         let mut args_clone = $args;
-
-        // Iterate over each argument
         for arg in args_clone.iter_mut() {
-            // Evaluate the argument using the provided symbol table
-            // If evaluation fails, propagate the error using the `?` operator
             *arg = arg.eval(&$symbol_table)?;
         }
         args_clone
@@ -573,7 +568,31 @@ impl Function {
             closure = Some(symbol_table.with_closure(close));
             symbol_table = closure.as_ref().unwrap();
         }
-        Ok(())
+
+        if self.named_args.is_empty() && self.extra_arg.is_none() {
+            if self.eval_args {
+                let args = try_collect!(args, symbol_table);
+                return (self.f)(args.clone(), symbol_table).with_context(|| {
+                    format!("Error in {}, with args {}", &self, format_args(&args))
+                });
+            } else {
+                return (self.f)(args, symbol_table);
+            }
+        }
+
+        let args = if self.eval_args {
+            try_collect!(args, symbol_table)
+        } else {
+            args
+        };
+
+         // Add local variables to symbol table
+        let new_sym =
+        symbol_table.with_locals(self.named_args.as_ref(), self.extra_arg, args.clone());
+
+         // Call the function
+         (self.f)(args.clone(), &new_sym)
+         .with_context(|| format!("Error in {}, with args {}", &self, format_args(&args)))
     }
 }
 
@@ -865,6 +884,10 @@ impl SymbolTable {
         }
     }
 
+    pub fn eval(&self, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        todo!()
+    }
+
     pub(crate) fn add_join_handle(&self, j: JoinHandle<LispResult<Expr>>) {
         self.fn_join_handles.write().push(j);
     }
@@ -899,4 +922,10 @@ impl SymbolTable {
     pub(crate) fn add_symbol(&self, sym: InternedString, value: Expr) {
         self.locals.write().insert(sym, value);
     }
+}
+
+
+fn format_args(args: &Vector<Expr>) -> String {
+    // let mut res = String::new();
+    format!("{}{}{}", "(", debug_join(args), ")")
 }
