@@ -1,6 +1,8 @@
+#[derive(Debug, PartialEq, Eq)]
 enum Token<'input> {
     Iten(&'input str),
     String(&'input str),
+    Comment(&'input str),
 }
 
 struct Tokenizer<'stdin> {
