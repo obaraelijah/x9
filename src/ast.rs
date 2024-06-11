@@ -900,10 +900,6 @@ impl SymbolTable {
         }
     }
 
-    pub fn eval(&self, symbol_table: &SymbolTable) -> LispResult<Expr> {
-        todo!()
-    }
-
     pub(crate) fn add_join_handle(&self, j: JoinHandle<LispResult<Expr>>) {
         self.fn_join_handles.write().push(j);
     }
@@ -914,6 +910,29 @@ impl SymbolTable {
                 eprintln!("Failed to join: {:?}", e);
             }
         })
+    }
+
+    pub(crate) fn lookup(&self, symbol: &InternedString) -> LispResult<Expr> {
+        if let Some(expr) = self.func_locals.get(symbol) {
+            return Ok(expr.clone());
+        }
+        if let Some(expr) = self.locals.read().get(symbol) {
+            return Ok(expr.clone());
+        }
+        // Check global scope
+        self.globals
+            .read()
+            .get(symbol)
+            .cloned()
+            .ok_or_else(|| anyhow!("Unknown Symbol '{}'", symbol.to_string()))
+    }
+
+    pub(crate) fn symbol_exists(&self, sym: &InternedString) -> bool {
+        self.lookup(sym).is_ok()
+    }
+
+    pub(crate) fn get_func_locals(&self) -> HashMap<InternedString, Expr> {
+        self.func_locals.clone()
     }
 
     pub(crate) fn with_closure(&self, other: &HashMap<InternedString, Expr>) -> SymbolTable {
@@ -931,8 +950,10 @@ impl SymbolTable {
         // }
     }
 
-    pub(crate) fn symbol_exists(&self, sym: &InternedString) -> bool {
-        todo!()
+    pub(crate) fn add_local_item(&self, symbol: InternedString, value: Expr) -> Self {
+        let new = self.clone();
+        new.locals.write().insert(symbol, value);
+        new
     }
 
     pub(crate) fn add_symbol(&self, sym: InternedString, value: Expr) {
@@ -960,19 +981,8 @@ impl SymbolTable {
         copy
     }
 
-    pub(crate) fn lookup(&self, symbol: &InternedString) -> LispResult<Expr> {
-        if let Some(expr) = self.func_locals.get(symbol) {
-            return Ok(expr.clone());
-        }
-        if let Some(expr) = self.locals.read().get(symbol) {
-            return Ok(expr.clone());
-        }
-        // Check global scope
-        self.globals
-            .read()
-            .get(symbol)
-            .cloned()
-            .ok_or_else(|| anyhow!("Unknown Symbol '{}'", symbol.to_string()))
+    pub fn eval(&self, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        todo!()
     }
 }
 
