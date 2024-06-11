@@ -1,4 +1,9 @@
-use rustyline::{completion::{Completer, Pair}, highlight::{Highlighter, MatchingBracketHighlighter}, hint::Hinter, validate::{MatchingBracketValidator, Validator}};
+use rustyline::{
+    completion::{Completer, Pair},
+    highlight::{Highlighter, MatchingBracketHighlighter},
+    hint::Hinter,
+    validate::{MatchingBracketValidator, Validator},
+};
 use rustyline_derive::Helper;
 use structopt::StructOpt;
 
@@ -47,11 +52,11 @@ struct Completions {
 
 impl Completions {
     fn new(sym_table: SymbolTable) -> Self {
-        Self { 
-            sym_table, 
+        Self {
+            sym_table,
             highlighter: MatchingBracketHighlighter::new(),
             validator: MatchingBracketValidator::new(),
-            coloured_prompt: ">>>".into(), 
+            coloured_prompt: ">>>".into(),
         }
     }
 }
@@ -60,27 +65,30 @@ impl Completer for Completions {
     type Candidate = Pair;
 
     fn complete(
-            &self, // FIXME should be `&mut self`
-            line: &str,
-            pos: usize,
-            ctx: &rustyline::Context<'_>,
-        ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
+        &self, // FIXME should be `&mut self`
+        line: &str,
+        pos: usize,
+        ctx: &rustyline::Context<'_>,
+    ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
         todo!()
     }
 }
 
 impl Highlighter for Completions {
     fn highlight_prompt<'b, 's: 'b, 'p: 'b>(
-            &'s self,
-            prompt: &'p str,
-            default: bool,
-        ) -> std::borrow::Cow<'b, str> {
+        &'s self,
+        prompt: &'p str,
+        default: bool,
+    ) -> std::borrow::Cow<'b, str> {
         todo!()
     }
 }
 
 impl Validator for Completions {
-    fn validate(&self, ctx: &mut rustyline::validate::ValidationContext) -> rustyline::Result<rustyline::validate::ValidationResult> {
+    fn validate(
+        &self,
+        ctx: &mut rustyline::validate::ValidationContext,
+    ) -> rustyline::Result<rustyline::validate::ValidationResult> {
         todo!()
     }
 }
