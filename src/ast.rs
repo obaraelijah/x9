@@ -228,10 +228,12 @@ impl Expr {
         }
     }
 
+    #[inline]
     pub(crate) fn num<T: ToNumericExpr>(number: T) -> Self {
         number.to_expr()
     }
 
+    #[inline]
     pub(crate) fn string(s: String) -> Self {
         Expr::String(Arc::new(s))
     }
@@ -327,12 +329,14 @@ impl Expr {
         }
     }
 
+    #[inline]
     pub(crate) fn get_function(&self) -> LispResult<&Function> {
         match self {
             Expr::Function(f) => Ok(f),
             _ => bad_types!("func", self),
         }
     }
+
     pub(crate) fn get_symbol(&self) -> LispResult<Symbol> {
         match self {
             Expr::Symbol(s) => Ok(*s),
@@ -368,6 +372,7 @@ impl Expr {
         Ok(len)
     }
 
+    #[inline]
     pub(crate) fn is_iterator(&self) -> bool {
         match self {
             Expr::LazyIter(_) => true,
@@ -375,6 +380,7 @@ impl Expr {
         }
     }
 
+    #[inline]
     pub(crate) fn get_iterator(&self) -> LispResult<IterType> {
         match self {
             Expr::LazyIter(l) => Ok(l.clone()),
@@ -648,7 +654,7 @@ impl std::ops::Rem<&Expr> for Expr {
 
 impl std::ops::Add<&Expr> for Expr {
     type Output = LispResult<Expr>;
-
+    #[inline]
     fn add(self, other: &Expr) -> LispResult<Expr> {
         match (&self, &other) {
             (Expr::Num(l), Expr::Num(r)) => Ok(Expr::num(l + r)),
@@ -820,6 +826,7 @@ impl Ord for Expr {
 }
 
 impl Expr {
+    #[inline]
     pub(crate) fn call_fn(
         &self,
         args: Vector<Expr>,
