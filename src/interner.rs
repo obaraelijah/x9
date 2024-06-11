@@ -7,26 +7,31 @@ use parking_lot::RwLock;
 pub struct InternedString(u32);
 
 impl PartialEq for InternedString {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
 impl std::hash::Hash for InternedString {
+    #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.0.hash(state);
     }
 }
 
 impl InternedString {
+    #[inline]
     pub(crate) fn new(s: String) -> Self {
         INTERNER.write().intern(s)
     }
 
+    #[inline]
     pub(crate) fn len(&self) -> usize {
         self.read().len()
     }
 
+    #[inline]
     pub fn read(&self) -> String {
         INTERNER.read().fetch(*self)
     }
@@ -41,18 +46,21 @@ impl InternedString {
 }
 
 impl PartialEq<str> for InternedString {
+    #[inline]
     fn eq(&self, other: &str) -> bool {
         self.read() == other
     }
 }
 
 impl From<&str> for InternedString {
+    #[inline]
     fn from(s: &str) -> Self {
         InternedString::new(s.to_string())
     }
 }
 
 impl From<String> for InternedString {
+    #[inline]
     fn from(s: String) -> Self {
         InternedString::new(s)
     }
@@ -77,6 +85,7 @@ impl std::fmt::Debug for InternedString {
 }
 
 impl PartialOrd for InternedString {
+    #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.read().partial_cmp(&other.read())
     }
@@ -103,6 +112,7 @@ impl Interner {
         }
     }
 
+    #[inline]
     fn get_new_id(&mut self) -> u32 {
         self.id += 1;
         self.id
