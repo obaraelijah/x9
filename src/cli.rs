@@ -11,6 +11,13 @@ pub struct Options {
     )]
     pub load_file: bool,
 
+    #[structopt(
+        short = "f",
+        long = "format",
+        help = "WIP: Format some incoming x9 on stdin"
+    )]
+    pub formatter: bool,
+
     #[structopt(short = "d", long = "debugger", help = "WIP: :^)")]
     pub debugger: bool,
 }
@@ -20,7 +27,13 @@ impl Default for Options {
         Options {
             files: Vec::with_capacity(0),
             load_file: false,
+            formatter: false,
             debugger: false,
         }
     }
 }
+
+// #[derive(Helper)]
+// struct Completions {
+//     todo!
+// }
