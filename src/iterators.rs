@@ -12,11 +12,24 @@ pub trait LazyIter: std::fmt::Debug + std::fmt::Display + Sync + Send {
     fn name(&self) -> &'static str;
     fn clone(&self) -> Box<dyn LazyIter>;
     fn id(&self) -> u64;
+    fn eval(&self, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        let mut res = Vector::new();
+        while let Some(ee) = self.next(symbol_table) {
+            res.push_back(ee?)
+        }
+        Ok(Expr::List(res))
+    }
 }
 
 impl Hash for IterType {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id().hash(state)
+    }
+}
+
+impl PartialEq for IterType {
+    fn eq(&self, _other: &IterType) -> bool {
+        false
     }
 }
 
@@ -53,7 +66,9 @@ pub(crate) struct LazyMap {
 
 impl LazyIter for LazyMap {
     fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
-        todo!()
+        self.inner
+            .next(symbol_table)
+            .map(|lispres| lispres.and_then(|e| self.f.call_fn(Vector::unit(e), symbol_table)))
     }
 
     fn name(&self) -> &'static str {
