@@ -14,3 +14,12 @@ impl<'stdin> Tokenizer<'stdin> {
         Self { input }
     }
 }
+
+impl<'input> Iterator for Tokenizer<'input> {
+    // TODO: Bad input
+    type Item = Token<'input>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}
