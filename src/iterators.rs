@@ -142,6 +142,7 @@ impl LazyIter for LazyFilter {
     }
 }
 
+// TODO: Figure out this i.e Expurnge it
 impl std::fmt::Display for LazyFilter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.inner)
@@ -323,5 +324,21 @@ impl LazyIter for Skip {
 
     fn id(&self) -> u64 {
         random()
+    }
+}
+
+pub(crate) struct TakeWhile {
+    pred: Function,
+    inner: IterType,
+    done: AtomicBool,
+}
+
+impl Clone for TakeWhile {
+    fn clone(&self) -> Self {
+        Self { 
+            pred: self.pred.clone(),
+            inner: LazyIter::clone(&self.inner),
+            done: AtomicBool::new(self.done.load(Ordering::SeqCst)),
+        }
     }
 }
