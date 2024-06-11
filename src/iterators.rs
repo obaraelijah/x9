@@ -335,7 +335,7 @@ pub(crate) struct TakeWhile {
 
 impl Clone for TakeWhile {
     fn clone(&self) -> Self {
-        Self { 
+        Self {
             pred: self.pred.clone(),
             inner: LazyIter::clone(&self.inner),
             done: AtomicBool::new(self.done.load(Ordering::SeqCst)),
