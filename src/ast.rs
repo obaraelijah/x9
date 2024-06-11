@@ -395,6 +395,14 @@ impl Expr {
             false
         }
     }
+
+    pub(crate) fn is_truthy(&self, symbol_table: &SymbolTable) -> LispResult<bool> {
+        if let Expr::Bool(b) = self {
+            return Ok(*b);
+        }
+        //TODO figure out for records
+        self.len(symbol_table).map(|len| len > 0)
+    }
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]

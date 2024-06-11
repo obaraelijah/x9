@@ -110,7 +110,23 @@ pub(crate) struct LazyFilter {
 
 impl LazyIter for LazyFilter {
     fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
-        todo!()
+        loop {
+            match self.inner.next(symbol_table)? {
+                Ok(item) => {
+                    let pred_res = self
+                        .f
+                        .call_fn(Vector::unit(item.clone()), symbol_table)
+                        .and_then(|fn_res| fn_res.is_truthy(symbol_table));
+                    // Result<bool, Err>
+                    match pred_res {
+                        Ok(false) => continue,
+                        Ok(true) => return Some(Ok(item)),
+                        Err(e) => return Some(Err(e)),
+                    }
+                }
+                Err(e) => return Some(Err(e)),
+            }
+        }
     }
 
     fn name(&self) -> &'static str {
