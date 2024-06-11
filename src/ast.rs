@@ -959,6 +959,21 @@ impl SymbolTable {
 
         copy
     }
+
+    pub(crate) fn lookup(&self, symbol: &InternedString) -> LispResult<Expr> {
+        if let Some(expr) = self.func_locals.get(symbol) {
+            return Ok(expr.clone());
+        }
+        if let Some(expr) = self.locals.read().get(symbol) {
+            return Ok(expr.clone());
+        }
+        // Check global scope
+        self.globals
+            .read()
+            .get(symbol)
+            .cloned()
+            .ok_or_else(|| anyhow!("Unknown Symbol '{}'", symbol.to_string()))
+    }
 }
 
 fn format_args(args: &Vector<Expr>) -> String {
