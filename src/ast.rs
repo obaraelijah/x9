@@ -1035,6 +1035,44 @@ impl SymbolTable {
         guard.docs.get(symbol).cloned()
     }
 
+    pub(crate) fn get_doc_methods(&self, sym: &str) -> Vec<(String, String)> {
+        let guard = self.docs.lock().unwrap();
+        let sym = format!("{}.", sym);
+        guard
+            .docs
+            .iter()
+            .filter(|(symbol, _doc)| symbol.starts_with(&sym))
+            .map(|(symbol, doc)| (symbol.into(), doc.into()))
+            .collect()
+    }
+
+    pub(crate) fn query_symbol_starts_with(&self, prefix: &str) -> Vec<String> {
+        let guard = self.globals.read();
+        guard
+            .iter()
+            .chain(self.locals.read().iter())
+            .filter(|(s, _)| s.to_string().starts_with(prefix))
+            .map(|(hit, _)| hit.to_string())
+            .collect()
+    }
+
+    /// Add a variable to a function's local scope.
+    ///
+    /// Unless you're `def`, you should be using this function.
+    pub(crate) fn add_func_local(&mut self, sym: Expr, value: Expr) -> LispResult<()> {
+        self.func_locals.insert(sym.get_symbol_string()?, value);
+        Ok(())
+    }
+
+    pub(crate) fn add_func_local_sym(&mut self, sym: Symbol, value: Expr) -> LispResult<()> {
+        self.func_locals.insert(sym, value);
+        Ok(())
+    }
+
+    pub(crate) fn add_func_local_str(&mut self, sym: &'static str, value: Expr) {
+        self.func_locals.insert(sym.into(), value);
+    }
+    
     pub(crate) fn with_locals(
         &self,
         symbols: &[InternedString],

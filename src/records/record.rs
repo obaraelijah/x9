@@ -1,8 +1,8 @@
+use anyhow::bail;
 use core::hash::Hash;
 use core::hash::Hasher;
-use std::ops::Deref;
-use anyhow::bail;
 use im::Vector;
+use std::ops::Deref;
 
 use crate::ast::{Expr, LispResult, SymbolTable};
 
@@ -12,7 +12,7 @@ pub(crate) trait RecordDoc {
     fn name() -> &'static str;
     fn type_doc() -> &'static str;
     fn method_doc() -> &'static [(&'static str, &'static str)];
-}   
+}
 
 pub trait Record: Sync + Send + downcast_rs::DowncastSync {
     /// Call a method on this record.
