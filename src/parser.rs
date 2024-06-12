@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use anyhow::anyhow;
 use im::{vector, Vector};
 
-use crate::ast::{Expr, Integer, LispResult, Num};
+use crate::ast::{Expr, Function, Integer, LispResult, Num, SymbolTable};
 
 fn parse_num(input: &str) -> LispResult<(Expr, usize)> {
     let next_whitespace_or_end = input
@@ -33,6 +35,24 @@ fn parse_symbol(input: &str) -> LispResult<(Expr, usize)> {
         _ => Expr::Symbol(output_str.into()),
     };
     Ok((res, end_index))
+}
+
+fn method_call(method: String) -> Expr {
+    let method_clone = method.clone();
+    let method_fn = move |args: Vector<Expr>, sym: &SymbolTable| {
+        let rec =  match args[0].get_record() {
+            Ok(rec) => rec,
+            Err(e) => return Err(e),
+        };
+        rec.call_method(&method_clone, args.clone().slice(1..), sym)
+    };
+    let f = Function::new(
+        format!("method_call<{}>", method),
+        1,
+        Arc::new(method_fn),
+        true,
+    );
+    Expr::function(f)
 }
 
 fn parse_string(input: &str) -> LispResult<(Expr, usize)> {
