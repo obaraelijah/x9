@@ -6,7 +6,7 @@ use crate::ast::{Expr, LispResult, SymbolTable};
 #[derive(Debug, Clone)]
 pub(crate) struct RegexRecord {
     re: Regex,
-    regex_string: String,    
+    regex_string: String,
 }
 
 impl Default for RegexRecord {
