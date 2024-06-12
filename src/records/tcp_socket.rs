@@ -1,8 +1,10 @@
-use std::net::{TcpListener, TcpStream};
-
-use anyhow::anyhow;
-
 use crate::ast::{Expr, Function, LispResult, SymbolTable};
+use anyhow::anyhow;
+use std::{io::BufReader, net::TcpListener};
+use std::{
+    io::{BufRead, Write},
+    net::TcpStream,
+};
 
 use super::RecordDoc;
 
@@ -27,11 +29,42 @@ impl Default for TcpListenerRecord {
 
 impl TcpListenerRecord {
     fn bind(args: Vec<Expr>, symbol_table: &SymbolTable) -> LispResult<Self> {
-        todo!()
+        // TODO: Add exact len later
+        let address = args[0].get_string()?;
+        let accept_fn = args[1].get_function()?.clone();
+        let tcp_listener = TcpListener::bind(address)
+            .map_err(|e| anyhow!("Could not bind to network address! {:?}", e))?;
+        Ok(TcpListenerRecord {
+            tcp_listener: Some(tcp_listener),
+            accept_fn: Some(accept_fn),
+            symbol_table: Some(symbol_table.clone()),
+            id: rand::random(),
+        })
     }
 
     fn handle_incoming(&self, incoming: TcpStream) -> LispResult<()> {
-        todo!()
+        let read_stream = incoming;
+        let mut write_stream = read_stream.try_clone().unwrap();
+        let line_stream = BufReader::new(read_stream);
+        let mut lines = Vec::new();
+        for line in line_stream.lines() {
+            let line = line.map_err(|e| anyhow!("Failed to read from connection! {:?}", e))?;
+            if !line.is_empty() {
+                lines.push(line);
+            } else {
+                let ff = self.accept_fn.as_ref().unwrap();
+                let sym = self.symbol_table.as_ref().unwrap();
+                let lines_expr = Expr::Tuple(lines.iter().cloned().map(Expr::string).collect());
+                let res = ff
+                    .call_fn(im::Vector::unit(lines_expr), sym)?
+                    .get_string()?;
+                write_stream
+                    .write_all(res.as_bytes())
+                    .map_err(|e| anyhow!("Failed to write response {} \n\n {:?}", res, e))?;
+                return Ok(());
+            }
+        }
+        Ok(())
     }
 
     fn listen(&self) -> LispResult<Expr> {
