@@ -1,9 +1,14 @@
 use rustyline::{
-    completion::{Completer, Pair}, error::ReadlineError, highlight::{Highlighter, MatchingBracketHighlighter}, hint::Hinter, validate::{self, MatchingBracketValidator, Validator}, Context
+    completion::{Completer, Pair},
+    error::ReadlineError,
+    highlight::{Highlighter, MatchingBracketHighlighter},
+    hint::Hinter,
+    validate::{self, MatchingBracketValidator, Validator},
+    Context,
 };
 use rustyline_derive::Helper;
-use structopt::StructOpt;
 use std::borrow::Cow;
+use structopt::StructOpt;
 
 use crate::ast::SymbolTable;
 

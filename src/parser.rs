@@ -40,7 +40,7 @@ fn parse_symbol(input: &str) -> LispResult<(Expr, usize)> {
 fn method_call(method: String) -> Expr {
     let method_clone = method.clone();
     let method_fn = move |args: Vector<Expr>, sym: &SymbolTable| {
-        let rec =  match args[0].get_record() {
+        let rec = match args[0].get_record() {
             Ok(rec) => rec,
             Err(e) => return Err(e),
         };
@@ -54,7 +54,6 @@ fn method_call(method: String) -> Expr {
     );
     Expr::function(f)
 }
-
 
 /// Massage a symbol like `Record.field.inner_field`
 /// into (.inner_field (.field Record))
