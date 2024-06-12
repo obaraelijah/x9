@@ -413,6 +413,7 @@ impl LazyIter for TakeWhile {
 //     }
 // }s
 
+#[derive(Debug)]
 pub(crate) struct Take {
     inner: IterType,
     amount: AtomicUsize,
@@ -439,6 +440,18 @@ impl Clone for Take {
     }
 }
 
+// TODO: Expunge it
+impl std::fmt::Display for Take {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Take<{}, {}>",
+           self.inner,
+           self.id,
+        )
+    }
+}
+
 impl LazyIter for Take {
     fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
         if self.amount.load(Ordering::SeqCst) == 0 {
@@ -459,18 +472,18 @@ impl LazyIter for Take {
     }
 }
 
-struct IndexGenerator {
-    max_values: Vec<usize>,
-}
+// struct IndexGenerator {
+//     max_values: Vec<usize>,
+// }
 
-impl IndexGenerator {
-    fn new(max_values: Vec<usize>) -> Self {
-        Self { max_values }
-    }
+// impl IndexGenerator {
+//     fn new(max_values: Vec<usize>) -> Self {
+//         Self { max_values }
+//     }
 
-    fn get_indices(&self, count: usize) -> Vec<usize> {
-        let mut curr_count = count;
-        Vec::with_capacity(self.max_values.len()).iter_mut().zip(&self.max_values).for_each(|()| )
-        todo!()
-    }
-}
+//     fn get_indices(&self, count: usize) -> Vec<usize> {
+//         let mut curr_count = count;
+//         Vec::with_capacity(self.max_values.len()).iter_mut().zip(&self.max_values).for_each(|()| )
+//         todo!()
+//     }
+// }
