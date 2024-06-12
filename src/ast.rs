@@ -920,6 +920,7 @@ impl Doc {
     }
 }
 
+// TODO: Debug should include stdlib
 #[derive(Clone, Debug, Default)]
 pub struct SymbolTable {
     globals: Arc<RwLock<HashMap<InternedString, Expr>>>,
@@ -957,12 +958,13 @@ impl SymbolTable {
     }
 
     pub fn wait_on_threads(&mut self) {
-        self.fn_join_handles.write().drain(..).for_each(|j| {
-            if let Err(e) = j.join() {
+        let join_handles = self.fn_join_handles.write().drain(..).collect::<Vec<_>>();
+        for join_handle in join_handles {
+            if let Err(e) = join_handle.join() {
                 eprintln!("Failed to join: {:?}", e);
             }
-        })
-    }
+        }
+    }    
 
     pub(crate) fn lookup(&self, symbol: &InternedString) -> LispResult<Expr> {
         if let Some(expr) = self.func_locals.get(symbol) {
