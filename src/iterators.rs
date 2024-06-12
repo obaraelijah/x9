@@ -412,3 +412,65 @@ impl LazyIter for TakeWhile {
 //         Ok(Expr::LazyIter(Box::new()))
 //     }
 // }s
+
+pub(crate) struct Take {
+    inner: IterType,
+    amount: AtomicUsize,
+    id: u64,
+}
+
+impl Take {
+    pub(crate) fn lisp_res(amount: usize, inner: IterType) -> LispResult<Expr> {
+        Ok(Expr::LazyIter(Box::new(Take {
+            amount: AtomicUsize::new(amount),
+            inner,
+            id: random(),
+        })))
+    }
+}
+
+impl Clone for Take {
+    fn clone(&self) -> Take {
+        Take {
+            inner: Clone::clone(&self.inner),
+            amount: AtomicUsize::new(self.amount.load(Ordering::SeqCst)),
+            id: self.id,
+        }
+    }
+}
+
+impl LazyIter for Take {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        if self.amount.load(Ordering::SeqCst) == 0 {
+            None
+        } else {
+            self.amount.fetch_sub(1, Ordering::SeqCst);
+            self.inner.next(symbol_table)
+        }
+    }
+    fn name(&self) -> &'static str {
+        "Take"
+    }
+    fn clone(&self) -> IterType {
+        Box::new(Clone::clone(self))
+    }
+    fn id(&self) -> u64 {
+        self.id
+    }
+}
+
+struct IndexGenerator {
+    max_values: Vec<usize>,
+}
+
+impl IndexGenerator {
+    fn new(max_values: Vec<usize>) -> Self {
+        Self { max_values }
+    }
+
+    fn get_indices(&self, count: usize) -> Vec<usize> {
+        let mut curr_count = count;
+        Vec::with_capacity(self.max_values.len()).iter_mut().zip(&self.max_values).for_each(|()| )
+        todo!()
+    }
+}
