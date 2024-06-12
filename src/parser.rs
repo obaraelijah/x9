@@ -369,7 +369,7 @@ pub fn read(s: &str) -> ExprIterator {
 
 #[cfg(test)]
 mod parser_tests {
-    use im::Vector;
+    use im::vector;
 
     use super::*;
     use crate::ast::Expr;
@@ -565,7 +565,6 @@ mod parser_tests {
             };
         }
     }
-
 
     #[test]
     fn test_dict() {
