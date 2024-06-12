@@ -1,8 +1,5 @@
 use rustyline::{
-    completion::{Completer, Pair},
-    highlight::{Highlighter, MatchingBracketHighlighter},
-    hint::Hinter,
-    validate::{MatchingBracketValidator, Validator},
+    completion::{Completer, Pair}, error::ReadlineError, highlight::{Highlighter, MatchingBracketHighlighter}, hint::Hinter, validate::{MatchingBracketValidator, Validator}, Context
 };
 use rustyline_derive::Helper;
 use structopt::StructOpt;
@@ -65,12 +62,34 @@ impl Completer for Completions {
     type Candidate = Pair;
 
     fn complete(
-        &self, // FIXME should be `&mut self`
+        &self,
         line: &str,
         pos: usize,
-        ctx: &rustyline::Context<'_>,
-    ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
-        todo!()
+        _ctx: &Context<'_>,
+    ) -> Result<(usize, Vec<Pair>), ReadlineError> {
+        if pos < line.len() || line.is_empty() {
+            return Ok((pos, vec![]));
+        }
+        let last_sym = line
+            .chars()
+            .rev()
+            .position(|c| c == '(' || c == ' ' || c == ')')
+            .unwrap_or(pos);
+        let line_fragment = &line[(pos - last_sym)..pos];
+        if line_fragment.is_empty() {
+            return Ok((pos, vec![]));
+        }
+        Ok((
+            pos,
+            self.sym_table
+                .query_symbol_starts_with(line_fragment)
+                .into_iter()
+                .map(|matched| Pair {
+                    display: matched.clone(),
+                    replacement: matched[last_sym..].into(),
+                })
+                .collect(),
+        ))
     }
 }
 
