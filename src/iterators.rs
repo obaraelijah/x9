@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::path::Iter;
 use std::{hash::Hash, ops::Deref};
 
 use im::Vector;
@@ -447,12 +446,7 @@ impl Clone for Take {
 // TODO: Expunge it
 impl std::fmt::Display for Take {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Take<{}, {}>",
-           self.inner,
-           self.id,
-        )
+        write!(f, "Take<{}, {}>", self.inner, self.id,)
     }
 }
 
