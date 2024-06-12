@@ -899,6 +899,7 @@ impl Expr {
 }
 
 use std::sync::Mutex;
+use std::iter::FromIterator;
 
 #[derive(Debug, Clone, Default)]
 struct Doc {
@@ -908,10 +909,7 @@ struct Doc {
 
 impl Doc {
     fn with_globals(v: Vec<(String, String)>) -> Self {
-        let mut docs = HashMap::new();
-        for (name, doc) in v.iter().cloned() {
-            docs.insert(name, doc);
-        }
+        let docs = HashMap::from_iter(v.iter().cloned());
         let order = v.into_iter().map(|(name, _)| name).collect();
         Doc { docs, order }
     }
