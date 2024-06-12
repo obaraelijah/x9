@@ -1,4 +1,7 @@
-use std::{fs::{self, File, OpenOptions}, io::{Read, Seek, Write}};
+use std::{
+    fs::{self, File, OpenOptions},
+    io::{Read, Seek, Write},
+};
 
 use anyhow::anyhow;
 use im::Vector;
