@@ -413,6 +413,7 @@ impl LazyIter for TakeWhile {
 //     }
 // }s
 
+// TODO: Expunge it
 #[derive(Debug)]
 pub(crate) struct Take {
     inner: IterType,
@@ -487,3 +488,29 @@ impl LazyIter for Take {
 //         todo!()
 //     }
 // }
+
+#[derive(Clone, Debug)]
+struct Digit {
+    curr: usize,
+    max: usize,
+}
+
+impl Digit {
+    fn new(max: usize) -> Self {
+        Digit { curr: 0, max }
+    }
+
+    fn inc(&mut self) -> bool {
+        self.curr += 1;
+        if self.curr >= self.max {
+            self.curr = 0;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn value(&self) -> usize {
+        self.curr
+    }
+}
