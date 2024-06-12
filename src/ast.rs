@@ -122,6 +122,7 @@ pub(crate) trait ToNumericExpr {
 }
 
 impl ToNumericExpr for usize {
+    #[inline]
     fn to_expr(self) -> Expr {
         match self.try_into() {
             Ok(res) => Expr::Integer(res),
@@ -129,66 +130,62 @@ impl ToNumericExpr for usize {
         }
     }
 
+    #[inline]
     fn to_bigdecimal(self) -> Num {
         FromPrimitive::from_usize(self).unwrap()
     }
 }
 
 impl ToNumericExpr for u64 {
+    #[inline]
     fn to_expr(self) -> Expr {
         Expr::Num(FromPrimitive::from_u64(self).unwrap())
     }
 
+    #[inline]
     fn to_bigdecimal(self) -> Num {
         FromPrimitive::from_u64(self).unwrap()
     }
 }
 
 impl ToNumericExpr for u32 {
+    #[inline]
     fn to_expr(self) -> Expr {
         Expr::Num(FromPrimitive::from_u32(self).unwrap())
     }
 
+    #[inline]
     fn to_bigdecimal(self) -> Num {
         FromPrimitive::from_u32(self).unwrap()
     }
 }
 
 impl ToNumericExpr for i32 {
+    #[inline]
     fn to_expr(self) -> Expr {
         Expr::Integer(self as Integer)
     }
 
+    #[inline]
     fn to_bigdecimal(self) -> Num {
         FromPrimitive::from_i32(self).unwrap()
     }
 }
 
 impl ToNumericExpr for Integer {
+    #[inline]
     fn to_expr(self) -> Expr {
         Expr::Integer(self)
     }
 
+    #[inline]
     fn to_bigdecimal(self) -> Num {
         FromPrimitive::from_i64(self).unwrap()
     }
 }
 
-impl ToNumericExpr for f32 {
-    fn to_expr(self) -> Expr {
-        if self.trunc() == self {
-            Expr::num(self.trunc() as u32)
-        } else {
-            Expr::Num(BigDecimal::from_f32(self).unwrap())
-        }
-    }
-
-    fn to_bigdecimal(self) -> Num {
-        FromPrimitive::from_f32(self).unwrap()
-    }
-}
-
 impl ToNumericExpr for BigDecimal {
+    #[inline]
     fn to_expr(self) -> Expr {
         if self.is_integer() {
             match self.to_i64() {
@@ -200,8 +197,25 @@ impl ToNumericExpr for BigDecimal {
         }
     }
 
+    #[inline]
     fn to_bigdecimal(self) -> Num {
         self
+    }
+}
+
+impl ToNumericExpr for f32 {
+    #[inline]
+    fn to_expr(self) -> Expr {
+        if self.trunc() == self {
+            Expr::num(self.trunc() as u32)
+        } else {
+            Expr::Num(BigDecimal::from_f32(self).unwrap())
+        }
+        // if self.is_
+    }
+
+    fn to_bigdecimal(self) -> Num {
+        FromPrimitive::from_f32(self).unwrap()
     }
 }
 
