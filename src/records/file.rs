@@ -1,4 +1,4 @@
-use std::fs::{self, OpenOptions};
+use std::{fs::{self, File, OpenOptions}, io::Write};
 
 use anyhow::anyhow;
 use im::Vector;
@@ -59,5 +59,25 @@ impl FileRecord {
             .ok_or_else(|| anyhow!("Could not represent path as UTF-8 string"))?
             .into();
         Ok(FileRecord::new(f, abs_path))
+    }
+
+    fn len(&mut self) -> LispResult<usize> {
+        self.get_file()?
+            .metadata()
+            .map(|m| m.len() as usize)
+            .map_err(|e| anyhow!("Failed to get metadata for file, {}", e))
+    }
+
+    fn get_file(&mut self) -> LispResult<&mut File> {
+        self.file
+            .as_mut()
+            .ok_or_else(|| anyhow!("Somehow called methods on uninit file"))
+    }
+
+    fn write_to_file(&mut self, content: String) -> LispResult<()> {
+        self.get_file()?
+            .write_all(content.as_bytes())
+            .map_err(|e| anyhow!("{:?}", e))
+            .map(|_| ())
     }
 }
