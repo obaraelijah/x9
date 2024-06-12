@@ -4,6 +4,7 @@ pub(crate) struct FileRecord {
     file: Option<std::fs::File>,
 }
 
+// TODO: Remove this
 impl Default for FileRecord {
     fn default() -> Self {
         Self {

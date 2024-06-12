@@ -11,6 +11,7 @@ pub(crate) type RecordType = Box<dyn Record>;
 pub(crate) trait RecordDoc {
     fn name() -> &'static str;
     fn type_doc() -> &'static str;
+    fn method_doc() -> &'static [(&'static str, &'static str)];
 }   
 
 pub trait Record: Sync + Send + downcast_rs::DowncastSync {
