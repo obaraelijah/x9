@@ -1,5 +1,5 @@
 use rustyline::{
-    completion::{Completer, Pair}, error::ReadlineError, highlight::{Highlighter, MatchingBracketHighlighter}, hint::Hinter, validate::{MatchingBracketValidator, Validator}, Context
+    completion::{Completer, Pair}, error::ReadlineError, highlight::{Highlighter, MatchingBracketHighlighter}, hint::Hinter, validate::{self, MatchingBracketValidator, Validator}, Context
 };
 use rustyline_derive::Helper;
 use structopt::StructOpt;
@@ -123,16 +123,36 @@ impl Highlighter for Completions {
 impl Validator for Completions {
     fn validate(
         &self,
-        ctx: &mut rustyline::validate::ValidationContext,
-    ) -> rustyline::Result<rustyline::validate::ValidationResult> {
-        todo!()
+        ctx: &mut validate::ValidationContext,
+    ) -> rustyline::Result<validate::ValidationResult> {
+        self.validator.validate(ctx)
+    }
+
+    fn validate_while_typing(&self) -> bool {
+        self.validator.validate_while_typing()
     }
 }
 
 impl Hinter for Completions {
     type Hint = String;
 
-    fn hint(&self, line: &str, pos: usize, ctx: &rustyline::Context<'_>) -> Option<Self::Hint> {
-        todo!()
+    fn hint(&self, line: &str, pos: usize, _ctx: &rustyline::Context<'_>) -> Option<Self::Hint> {
+        if pos < line.len() || line.is_empty() {
+            return None;
+        }
+        let last_sym = line
+            .chars()
+            .rev()
+            .position(|c| c == '(' || c == ' ' || c == ')')
+            .unwrap_or(pos);
+        let line_fragment = &line[(pos - last_sym)..pos];
+        if line_fragment.is_empty() {
+            return None;
+        }
+        self.sym_table
+            .query_symbol_starts_with(line_fragment)
+            .into_iter()
+            .next()
+            .map(|s| s[last_sym..].to_owned())
     }
 }
