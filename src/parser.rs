@@ -460,6 +460,114 @@ mod parser_tests {
     }
 
     #[test]
+    fn test_parse_expr() {
+        let tests = [
+            (
+                "(1 2 3)",
+                Expr::List(vector![Expr::num(1), Expr::num(2), Expr::num(3)]),
+                7,
+            ),
+            ("\"hello\"", Expr::string("hello".to_string()), 7),
+            ("123.12   456", Expr::num(123.12), 6),
+        ];
+        for (text, expected, idx) in tests {
+            let res = parse_expr(text);
+            let res_s = format!("{:?}", res);
+            assert_eq!(
+                res.expect(&format!(
+                    "Could not parse {} into {}; result is {}",
+                    text, expected, res_s
+                )),
+                (expected.clone(), idx),
+            )
+        }
+    }
+
+    #[test]
+    fn test_expr_iterator() {
+        let tests = [
+            (
+                "123 456 \"789\"",
+                vec![
+                    Expr::num(123),
+                    Expr::num(456),
+                    Expr::string("789".to_string()),
+                ],
+            ),
+            ("()", vec![Expr::List(vector![])]),
+            (
+                "(1 2 3)",
+                vec![Expr::List(vector![
+                    Expr::num(1),
+                    Expr::num(2),
+                    Expr::num(3)
+                ])],
+            ),
+            (
+                "^(1 2 3)",
+                vec![Expr::Tuple(vector![
+                    Expr::num(1),
+                    Expr::num(2),
+                    Expr::num(3)
+                ])],
+            ),
+            (
+                "'(1 2 3)",
+                vec![Expr::Quote(vector![
+                    Expr::num(1),
+                    Expr::num(2),
+                    Expr::num(3)
+                ])],
+            ),
+            ("hello ; 3123", vec![Expr::Symbol("hello".into())]),
+            (
+                "123;commented text\n456 ",
+                vec![Expr::num(123), Expr::num(456)],
+            ),
+            (";", vec![]),
+            (
+                "#(+ $1 $2)",
+                vec![Expr::List(vector![
+                    Expr::Symbol("anon-fn-sugar".into()),
+                    Expr::List(vector![
+                        Expr::Symbol("+".into()),
+                        Expr::Symbol("$1".into()),
+                        Expr::Symbol("$2".into()),
+                    ])
+                ])],
+            ),
+            (
+                "(defn foo () (println \"hello\"))",
+                vec![Expr::List(vector![
+                    Expr::Symbol("defn".into()),
+                    Expr::Symbol("foo".into()),
+                    Expr::List(vector![]),
+                    Expr::List(vector![
+                        Expr::Symbol("println".into()),
+                        Expr::string("hello".into())
+                    ])
+                ])],
+            ),
+        ];
+        for (text, expected) in tests {
+            let parsed: Result<Vec<Expr>, _> = ExprIterator::new(text).into_iter().collect();
+            match parsed {
+                Ok(output) => assert_eq!(
+                    output, expected,
+                    "Could not parse {} into {:?}, instead {:?} was parsed",
+                    text, expected, output
+                ),
+                Err(e) => assert!(
+                    false,
+                    "Was given error message {} when trying to parse {}",
+                    e, text
+                ),
+            };
+        }
+    }
+
+
+    #[test]
     fn test_dict() {
         let tests = [
             ("{}", Expr::List(vector![Expr::Symbol("dict".into())]), 2),
