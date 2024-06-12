@@ -878,7 +878,22 @@ impl Expr {
     }
 
     pub fn eval(&self, symbol_table: &SymbolTable) -> LispResult<Expr> {
-        let res = todo!();
+        let res = match self {
+            Expr::Symbol(sym) => {
+                return symbol_table.lookup(sym);
+            }
+            Expr::List(list) => {
+                let head = match list.get(0) {
+                    Some(h) => h,
+                    None => return Ok(Expr::List(Vector::new())),
+                };
+                let tail = list.clone().slice(1..);
+                return head.eval(symbol_table)?.call_fn(tail, symbol_table);
+            }
+            tup @ Expr::Tuple(_) => tup.clone(),
+            Expr::Quote(inner) => Expr::List(inner.clone()),
+            otherwise => otherwise.clone(),
+        };
         Ok(res)
     }
 }
