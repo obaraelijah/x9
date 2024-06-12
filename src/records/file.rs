@@ -1,4 +1,4 @@
-use std::{fs::{self, File, OpenOptions}, io::Write};
+use std::{fs::{self, File, OpenOptions}, io::{Read, Seek, Write}};
 
 use anyhow::anyhow;
 use im::Vector;
@@ -59,6 +59,26 @@ impl FileRecord {
             .ok_or_else(|| anyhow!("Could not represent path as UTF-8 string"))?
             .into();
         Ok(FileRecord::new(f, abs_path))
+    }
+
+    fn rewind_file(&mut self) -> LispResult<()> {
+        self.get_file()?
+            .seek(std::io::SeekFrom::Start(0))
+            .map(|_| ())
+            .map_err(|e| anyhow!("{:?}", e))
+    }
+
+    fn read_all(&mut self) -> LispResult<String> {
+        let mut buf = String::new();
+        self.get_file()?
+            .read_to_string(&mut buf)
+            .map_err(|e| anyhow!("Failed to read to string {}", e))?;
+        self.rewind_file()?;
+        Ok(buf)
+    }
+
+    fn read_to_string(&mut self) -> LispResult<Expr> {
+        self.read_all().map(Expr::string)
     }
 
     fn len(&mut self) -> LispResult<usize> {
