@@ -2,13 +2,13 @@ use crate::records::RecordType;
 use anyhow::{anyhow, bail, Context};
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive, Zero};
 use core::cmp::Ordering;
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
 use im::Vector;
 use itertools::Itertools;
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 

@@ -327,10 +327,21 @@ impl LazyIter for Skip {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct TakeWhile {
     pred: Function,
     inner: IterType,
     done: AtomicBool,
+}
+
+impl TakeWhile {
+    pub(crate) fn lisp_res(pred: Function, inner: IterType) -> LispResult<Expr> {
+        Ok(Expr::LazyIter(Box::new(TakeWhile {
+            pred,
+            inner,
+            done: AtomicBool::new(false),
+        })))
+    }
 }
 
 impl Clone for TakeWhile {
@@ -342,3 +353,52 @@ impl Clone for TakeWhile {
         }
     }
 }
+
+macro_rules! option_try {
+    ($e:expr) => {
+        match $e {
+            Ok(val) => val,
+            Err(e) => return Some(Err(e)),
+        }
+    };
+}
+
+impl LazyIter for TakeWhile {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        // Check if the iteration is done
+        if self.done.load(Ordering::SeqCst) {
+            return None;
+        }
+        let res = option_try!(self.inner.next(symbol_table)?);
+        let fn_res = option_try!(self
+            .pred
+            .call_fn(im::Vector::unit(res.clone()), symbol_table));
+        let should_stop = !option_try!(fn_res.is_truthy(symbol_table));
+        if should_stop {
+            self.done.store(true, Ordering::SeqCst);
+            None
+        } else {
+            Some(Ok(res))
+        }
+    }
+
+    fn name(&self) -> &'static str {
+        "TakeWhile"
+    }
+
+    fn clone(&self) -> Box<dyn LazyIter> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn id(&self) -> u64 {
+        random()
+    }
+
+
+}
+
+// impl Lazy {
+//     fn lisp_res(list: Vector<Expr>) -> LispResult<Expr> {
+//         Ok(Expr::LazyIter(Box::new()))
+//     }
+// }s
