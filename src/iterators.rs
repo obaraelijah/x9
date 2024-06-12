@@ -1,6 +1,9 @@
+use std::collections::HashSet;
+use std::path::Iter;
 use std::{hash::Hash, ops::Deref};
 
 use im::Vector;
+use parking_lot::Mutex;
 use rand::random;
 
 use crate::ast::{Expr, Function, LispResult, SymbolTable};
@@ -512,5 +515,64 @@ impl Digit {
 
     fn value(&self) -> usize {
         self.curr
+    }
+}
+
+// Whats next impliment , Distinct & Inspect & IndexGenerator Iterators...
+pub(crate) struct Distinct {
+    inner: IterType,
+    seen: Arc<Mutex<HashSet<Expr>>>,
+    id: u64,
+}
+
+impl Clone for Distinct {
+    fn clone(&self) -> Self {
+        Self {
+            inner: LazyIter::clone(&self.inner),
+            seen: self.seen.clone(),
+            id: self.id,
+        }
+    }
+}
+
+impl std::fmt::Debug for Distinct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DistinctGenerator")
+            .field("inner", &self.inner)
+            .field("id", &self.id)
+            .finish()
+    }
+}
+
+impl std::fmt::Display for Distinct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", &self)
+    }
+}
+
+impl LazyIter for Distinct {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        loop {
+            let item = option_try!(self.inner.next(symbol_table)?);
+            let mut seen_guard = self.seen.lock();
+            if seen_guard.contains(&item) {
+                continue;
+            } else {
+                seen_guard.insert(item.clone());
+                return Some(Ok(item));
+            }
+        }
+    }
+
+    fn name(&self) -> &'static str {
+        "DistinctGenerator"
+    }
+
+    fn clone(&self) -> Box<dyn LazyIter> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn id(&self) -> u64 {
+        self.id
     }
 }
