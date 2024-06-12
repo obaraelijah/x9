@@ -55,6 +55,44 @@ fn method_call(method: String) -> Expr {
     Expr::function(f)
 }
 
+
+/// Massage a symbol like `Record.field.inner_field`
+/// into (.inner_field (.field Record))
+///
+/// If there's left hand side, like `.read_to_string`,
+/// return a `Fn<method_call<read_to_string>>` instead.
+fn method_call_multiple(methods: Vec<String>) -> Expr {
+    if methods.len() == 1 {
+        return method_call(methods[0].clone());
+    }
+    // chain multiple methods
+    let ff: Expr = methods.into_iter().fold(Expr::Nil, |acc, method| {
+        if matches!(acc, Expr::Nil) {
+            return Expr::Symbol(method.into());
+        }
+        let acc_clone = acc.clone();
+        let method_clone = method.clone();
+        let method_fn = move |args: Vector<Expr>, sym: &SymbolTable| {
+            let mut args = args;
+            // Stick the acc at the front
+            args.push_front(acc.clone());
+            let rec = match args[0].eval(sym).and_then(|e| e.get_record()) {
+                Ok(rec) => rec,
+                Err(e) => return Err(e),
+            };
+            rec.call_method(&method_clone, args.slice(1..), sym)
+        };
+        let f = Function::new(
+            format!("method_call<{}; {}>", method, acc_clone),
+            0,
+            Arc::new(method_fn),
+            true,
+        );
+        Expr::List(im::Vector::unit(Expr::function(f)))
+    });
+    ff
+}
+
 fn parse_string(input: &str) -> LispResult<(Expr, usize)> {
     // TODO: Clean this up
     if input.len() < 2 {
