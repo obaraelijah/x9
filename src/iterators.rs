@@ -354,6 +354,18 @@ impl Clone for TakeWhile {
     }
 }
 
+impl std::fmt::Display for TakeWhile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TakeWhile<{}, {}, {}>",
+            self.pred,
+            self.inner,
+            self.done.load(Ordering::SeqCst),
+        )
+    }
+}
+
 macro_rules! option_try {
     ($e:expr) => {
         match $e {
@@ -393,8 +405,6 @@ impl LazyIter for TakeWhile {
     fn id(&self) -> u64 {
         random()
     }
-
-
 }
 
 // impl Lazy {
