@@ -585,6 +585,7 @@ impl Function {
         })
     }
 
+    // TODO: Refactor this into something cleaner.
     // Evaluating & executes a function with a given set of arguments
     pub(crate) fn call_fn(
         &self,
@@ -642,7 +643,9 @@ impl Function {
     }
 }
 
-#[derive(Debug)]
+impl std::error::Error for ProgramError {}
+
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ProgramError {
     BadTypes, // context
     // InvalidCharacterInSymbol,
