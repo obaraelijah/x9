@@ -2,6 +2,9 @@ use crate::records::RecordType;
 use anyhow::{anyhow, bail, Context};
 use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive, Zero};
 use core::cmp::Ordering;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use im::Vector;
 use itertools::Itertools;
 use parking_lot::RwLock;
@@ -1072,7 +1075,7 @@ impl SymbolTable {
     pub(crate) fn add_func_local_str(&mut self, sym: &'static str, value: Expr) {
         self.func_locals.insert(sym.into(), value);
     }
-    
+
     pub(crate) fn with_locals(
         &self,
         symbols: &[InternedString],
@@ -1093,9 +1096,19 @@ impl SymbolTable {
 
         copy
     }
+    pub(crate) fn get_canonical_doc_order(&self) -> Vec<String> {
+        let guard = self.docs.lock().unwrap();
+        guard.order.clone()
+    }
 
-    pub fn eval(&self, symbol_table: &SymbolTable) -> LispResult<Expr> {
-        todo!()
+    pub(crate) fn load_file<P: AsRef<Path>>(&self, path: P) -> LispResult<Expr> {
+        let mut strbuf = String::new();
+        File::open(path)?.read_to_string(&mut strbuf)?;
+        for expr in crate::parser::read(strbuf.as_str()) {
+            let prog = expr?;
+            prog.eval(self)?;
+        }
+        Ok(Expr::Nil)
     }
 }
 
