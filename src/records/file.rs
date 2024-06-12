@@ -1,3 +1,6 @@
+use std::fs::{self, OpenOptions};
+
+use anyhow::anyhow;
 use im::Vector;
 
 use crate::ast::{Expr, LispResult, SymbolTable};
@@ -38,5 +41,23 @@ impl FileRecord {
             file: Some(f),
             path,
         }
+    }
+
+    pub(crate) fn open_file(path: String) -> LispResult<Self> {
+        // TODO: Allow access to OpenOptions in x9.
+        // Open the file with liberal permissions.
+        let f = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .read(true)
+            .open(path.clone())
+            .map_err(|e| anyhow!("Could not open file \"{}\" because {}", &path, e))?;
+        // Make the path pretty.
+        let abs_path = fs::canonicalize(path)
+            .map_err(|e| anyhow!("Could not canonicalize path! {}", e))?
+            .to_str()
+            .ok_or_else(|| anyhow!("Could not represent path as UTF-8 string"))?
+            .into();
+        Ok(FileRecord::new(f, abs_path))
     }
 }
