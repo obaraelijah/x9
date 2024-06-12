@@ -260,40 +260,18 @@ impl Expr {
         match self {
             Expr::Num(_) => "num",
             Expr::String(_) => "str",
+            Expr::Quote(_) => "quote",
             Expr::Integer(_) => "int",
             Expr::Bool(_) => "bool",
+            Expr::Function(_) => "func",
+            Expr::ByteCompiledFunction(_) => "func",
             Expr::Symbol(_) => "symbol",
             Expr::List(_) => "list",
-            Expr::Tuple(_) => "tuple",
             Expr::Nil => "nil",
-            Expr::Quote(_) => "quote",
-            Expr::Function(_) => "function",
-            Expr::Dict(_) => "map",
-            Expr::ByteCompiledFunction(_) => "func",
             Expr::LazyIter(_) => "iterator",
+            Expr::Tuple(_) => "tuple",
+            Expr::Dict(_) => "map",
             Expr::Record(_) => "record",
-        }
-    }
-
-    pub(crate) fn push_front(&self, item: Expr) -> LispResult<Expr> {
-        let mut list = self.get_list()?;
-        list.push_front(item);
-        let res = match self {
-            Expr::List(_) => Expr::List(list),
-            Expr::Quote(_) => Expr::Quote(list),
-            Expr::Tuple(_) => Expr::Tuple(list),
-            _ => unreachable!(),
-        };
-        Ok(res)
-    }
-
-    pub(crate) fn get_list(&self) -> LispResult<Vector<Expr>> {
-        match self {
-            Expr::List(l) => Ok(l.clone()),
-            Expr::Nil => Ok(Vector::new()),
-            Expr::Tuple(l) => Ok(l.clone()),
-            Expr::Quote(l) => Ok(l.clone()),
-            _ => bad_types!("list", self),
         }
     }
 
@@ -320,12 +298,27 @@ impl Expr {
         }
     }
 
+    pub(crate) fn get_record(&self) -> LispResult<RecordType> {
+        if let Expr::Record(r) = self {
+            Ok(r.clone())
+        } else {
+            bad_types!("record", self)
+        }
+    }
+
     pub(crate) fn get_usize(&self) -> LispResult<usize> {
         let res = self.get_num()?.to_usize().ok_or(anyhow!(
             "Cannot represent {} as it needs to fit in a usize",
             self.get_num()?
         ))?;
         Ok(res)
+    }
+
+    pub(crate) fn get_symbol(&self) -> LispResult<Symbol> {
+        match self {
+            Expr::Symbol(s) => Ok(*s),
+            _ => bad_types!("symbol", self),
+        }
     }
 
     pub fn get_string(&self) -> LispResult<String> {
@@ -343,34 +336,11 @@ impl Expr {
         }
     }
 
-    #[inline]
-    pub(crate) fn get_function(&self) -> LispResult<&Function> {
-        match self {
-            Expr::Function(f) => Ok(f),
-            _ => bad_types!("func", self),
-        }
-    }
-
-    pub(crate) fn get_symbol(&self) -> LispResult<Symbol> {
-        match self {
-            Expr::Symbol(s) => Ok(*s),
-            _ => bad_types!("symbol", self),
-        }
-    }
-
     pub(crate) fn is_symbol_underscore(&self) -> bool {
         self.get_symbol_string()
             .ok()
             .map(|s| s.to_string() == "_")
             .unwrap_or(false)
-    }
-
-    pub fn get_symbol_string(&self) -> LispResult<InternedString> {
-        match self {
-            Expr::Symbol(s) => Ok(*s),
-            Expr::Record(r) => Ok(InternedString::new(r.get_type_str())),
-            _ => bad_types!("symbol", self),
-        }
     }
 
     pub(crate) fn len(&self, symbol_table: &SymbolTable) -> LispResult<usize> {
@@ -381,9 +351,18 @@ impl Expr {
             Expr::Dict(m) => m.len(),
             Expr::String(s) => s.len(),
             Expr::Symbol(s) => s.len(),
+            // TODO: logic for records to be implimented!!
             _ => return bad_types!("collection (list, tuple, record, etc)", self),
         };
         Ok(len)
+    }
+
+    #[inline]
+    pub(crate) fn get_function(&self) -> LispResult<&Function> {
+        match self {
+            Expr::Function(f) => Ok(f),
+            _ => bad_types!("func", self),
+        }
     }
 
     #[inline]
@@ -402,11 +381,46 @@ impl Expr {
         }
     }
 
+    // HACK: This is very ugly. Should remove.
+    #[inline]
+    pub(crate) fn push_front(&self, item: Expr) -> LispResult<Expr> {
+        let mut list = self.get_list()?;
+        list.push_front(item);
+        let res = match self {
+            Expr::List(_) => Expr::List(list),
+            Expr::Quote(_) => Expr::Quote(list),
+            Expr::Tuple(_) => Expr::Tuple(list),
+            _ => unreachable!(),
+        };
+        Ok(res)
+    }
+
+    #[inline]
+    pub(crate) fn get_list(&self) -> LispResult<Vector<Expr>> {
+        match self {
+            Expr::List(l) => Ok(l.clone()),
+            Expr::Nil => Ok(Vector::new()),
+            Expr::Tuple(l) => Ok(l.clone()),
+            Expr::Quote(l) => Ok(l.clone()),
+            _ => bad_types!("list", self),
+        }
+    }
+
+    #[inline]
     pub(crate) fn symbol_matches(&self, sym: &'static str) -> bool {
         if let Expr::Symbol(s) = self {
             s == sym
         } else {
             false
+        }
+    }
+
+    #[inline]
+    pub fn get_symbol_string(&self) -> LispResult<InternedString> {
+        match self {
+            Expr::Symbol(s) => Ok(*s),
+            Expr::Record(r) => Ok(InternedString::new(r.get_type_str())),
+            _ => bad_types!("symbol", self),
         }
     }
 
