@@ -1,3 +1,7 @@
+use im::Vector;
+
+use crate::ast::{Expr, LispResult, SymbolTable};
+
 #[derive(Debug)]
 pub(crate) struct FileRecord {
     path: String,
@@ -14,7 +18,21 @@ impl Default for FileRecord {
     }
 }
 
+impl PartialEq for FileRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
+}
+
 impl FileRecord {
+    pub(crate) const RECORD_NAME: &'static str = "FileRecord";
+
+    pub(crate) fn from_x7(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        symbol_table
+            .lookup(&Self::RECORD_NAME.into())?
+            .call_fn(exprs, symbol_table)
+    }
+
     fn new(f: std::fs::File, path: String) -> FileRecord {
         FileRecord {
             file: Some(f),
