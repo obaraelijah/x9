@@ -898,8 +898,8 @@ impl Expr {
     }
 }
 
-use std::sync::Mutex;
 use std::iter::FromIterator;
+use std::sync::Mutex;
 
 #[derive(Debug, Clone, Default)]
 struct Doc {
@@ -964,15 +964,17 @@ impl SymbolTable {
                 eprintln!("Failed to join: {:?}", e);
             }
         }
-    }    
+    }
 
     pub(crate) fn lookup(&self, symbol: &InternedString) -> LispResult<Expr> {
         if let Some(expr) = self.func_locals.get(symbol) {
             return Ok(expr.clone());
         }
+
         if let Some(expr) = self.locals.read().get(symbol) {
             return Ok(expr.clone());
         }
+
         // Check global scope
         self.globals
             .read()
@@ -1012,6 +1014,25 @@ impl SymbolTable {
 
     pub(crate) fn add_symbol(&self, sym: InternedString, value: Expr) {
         self.locals.write().insert(sym, value);
+    }
+
+    // FIXME: We should more carefully pollute the global scope.
+    //        Ideally add proper lexical scopes (which we.... kinda have)
+    pub(crate) fn add_local(&self, symbol: &Expr, value: &Expr) -> LispResult<Expr> {
+        self.locals
+            .write()
+            .insert(symbol.get_symbol_string()?, value.clone());
+        Ok(Expr::Nil)
+    }
+
+    pub(crate) fn add_doc_item(&self, symbol: String, doc: String) {
+        let mut guard = self.docs.lock().unwrap();
+        guard.add(symbol, doc);
+    }
+
+    pub(crate) fn get_doc_item(&self, symbol: &str) -> Option<String> {
+        let guard = self.docs.lock().unwrap();
+        guard.docs.get(symbol).cloned()
     }
 
     pub(crate) fn with_locals(
