@@ -1,6 +1,5 @@
 use core::hash::Hash;
 use core::hash::Hasher;
-use std::fmt;
 use std::ops::Deref;
 use anyhow::bail;
 use im::Vector;
@@ -63,14 +62,20 @@ pub trait Record: Sync + Send + downcast_rs::DowncastSync {
 
 downcast_rs::impl_downcast!(Record);
 
-impl fmt::Display for RecordType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for &dyn Record {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.display())
     }
 }
 
-impl fmt::Debug for RecordType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for RecordType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.display())
+    }
+}
+
+impl std::fmt::Debug for RecordType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.debug())
     }
 }
@@ -91,4 +96,11 @@ impl Clone for RecordType {
     fn clone(&self) -> RecordType {
         Record::clone(self.as_ref())
     }
+}
+
+#[macro_export]
+macro_rules! record {
+    ($e:expr) => {
+        Ok(Expr::Record(Box::new($e)))
+    };
 }
