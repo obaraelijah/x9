@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod cli;
+pub mod ffi;
 pub mod formatter;
 pub mod interner;
 mod iterators;
