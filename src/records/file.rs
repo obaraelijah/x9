@@ -113,4 +113,38 @@ impl FileRecord {
             .map_err(|e| anyhow!("{:?}", e))
             .map(|_| ())
     }
+
+    fn write(&mut self, content: String) -> LispResult<Expr> {
+        let content_len = Expr::num(content.len());
+        // Set the length to 0.
+        self.try_shrink()?;
+        // Write the string
+        self.write_to_file(content)?;
+        // Set the cursor to pos 0
+        self.rewind_file()?;
+        // Flush the changes
+        self.get_file()?
+            .flush()
+            .map_err(|e| anyhow!("Failed to flush file {}", e))?;
+        Ok(content_len)
+    }
+
+    fn read_lines(&mut self) -> LispResult<Expr> {
+        let contents = self.read_all()?;
+        let split: im::Vector<Expr> = contents
+            .split('\n')
+            .map(|s| Expr::string(s.into()))
+            .collect();
+        Ok(Expr::Tuple(split))
+    }
+
+    fn append(&mut self, content: String) -> LispResult<Expr> {
+        let content_len = Expr::num(content.len());
+        self.get_file()?
+            .seek(std::io::SeekFrom::End(0))
+            .map_err(|e| anyhow!("Could not seek to end of file! {}", e))?;
+        self.write_to_file(content)?;
+        self.rewind_file()?;
+        Ok(content_len)
+    }
 }
