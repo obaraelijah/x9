@@ -4,6 +4,7 @@ mod file;
 mod record;
 mod regex;
 mod set;
+mod struct_record;
 mod tcp_socket;
 
 pub(crate) use self::dict::DictRecord;
