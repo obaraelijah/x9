@@ -91,6 +91,16 @@ impl FileRecord {
             .map_err(|e| anyhow!("Failed to get metadata for file, {}", e))
     }
 
+    fn try_shrink(&mut self) -> LispResult<()> {
+        if self.len()? == 0 {
+            Ok(())
+        } else {
+            self.get_file()?
+                .set_len(0)
+                .map_err(|e| anyhow!("Failed to shrink file to 0, {}", e))
+        }
+    }
+
     fn get_file(&mut self) -> LispResult<&mut File> {
         self.file
             .as_mut()
