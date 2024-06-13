@@ -75,7 +75,20 @@ enum SeparatorStrategy {
 
 impl BasicExpr<'_> {
     fn get_sep(&self) -> SeparatorStrategy {
-        todo!()
+        match &self {
+            BasicExpr::Comment(_) | BasicExpr::List(_) => SeparatorStrategy::Newline,
+            BasicExpr::String(_) => SeparatorStrategy::Space,
+            BasicExpr::Item(i) => match *i {
+                "defn" | "defrecord" => SeparatorStrategy::NewlineSans(1),
+                "defmethod" => SeparatorStrategy::NewlineSans(2),
+                "do" | "if" | "cond" | "filter" | "foreach" | "map" | "bind" => {
+                    SeparatorStrategy::Newline
+                }
+                // "bind" => SeparatorStrategy::Bind,
+                _ => SeparatorStrategy::Space,
+            },
+        }
     }
 }
+
 
