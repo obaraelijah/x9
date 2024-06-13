@@ -512,7 +512,7 @@ impl Digit {
     }
 }
 
-// Whats next impliment , Distinct & Inspect & IndexGenerator Iterators...
+// Whats next, impliment Distinct & Inspect & IndexGenerator Iterators...
 pub(crate) struct Distinct {
     inner: IterType,
     seen: Arc<Mutex<HashSet<Expr>>>,
@@ -560,6 +560,56 @@ impl LazyIter for Distinct {
 
     fn name(&self) -> &'static str {
         "DistinctGenerator"
+    }
+
+    fn clone(&self) -> Box<dyn LazyIter> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn id(&self) -> u64 {
+        self.id
+    }
+}
+
+impl Distinct {
+    pub(crate) fn lisp_res(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+        // TODO: check right number of args
+        let distinct_generator = Distinct::new(exprs[0].get_iterator()?);
+        Ok(Expr::LazyIter(Box::new(distinct_generator)))
+    }
+    fn new(inner: IterType) -> Self {
+        Self {
+            inner,
+            seen: Default::default(),
+            id: random(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct Inspect {
+    inner: IterType,
+    inspect_function: Function,
+    id: u64,
+}
+
+impl std::fmt::Display for Inspect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl LazyIter for Inspect {
+    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        let next = option_try!(self.inner.next(symbol_table)?);
+        option_try!(self
+            .inspect_function
+            .call_fn(im::vector![next.clone()], symbol_table));
+        Some(Ok(next))
+    }
+
+    fn name(&self) -> &'static str {
+        "Inspect"
     }
 
     fn clone(&self) -> Box<dyn LazyIter> {
