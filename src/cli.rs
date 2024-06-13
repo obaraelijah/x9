@@ -1,6 +1,8 @@
-use rustyline::{
-    completion::{Completer, Pair}, error::ReadlineError, highlight::{Highlighter, MatchingBracketHighlighter}, hint::Hinter, validate::{self, MatchingBracketValidator, Validator}, Config, Context
-};
+use rustyline::completion::{Completer, Pair};
+use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
+use rustyline::hint::Hinter;
+use rustyline::validate::{self, MatchingBracketValidator, Validator};
+use rustyline::{error::ReadlineError, Config, Context, EditMode, Editor};
 use rustyline_derive::Helper;
 use std::borrow::Cow;
 use structopt::StructOpt;
@@ -134,8 +136,8 @@ impl Highlighter for Completions {
         self.highlighter.highlight(line, pos)
     }
 
-    fn highlight_char(&self, line: &str, pos: usize, forced: bool) -> bool {
-        self.highlighter.highlight_char(line, pos, forced)
+    fn highlight_char(&self, line: &str, pos: usize) -> bool {
+        self.highlighter.highlight_char(line, pos)
     }
 }
 
@@ -177,13 +179,16 @@ impl Hinter for Completions {
 }
 
 pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
-    let conf = Config::builder()
+    let config = Config::builder()
         .edit_mode(rustyline::EditMode::Vi)
         .auto_add_history(true)
         .indent_size(2)
         .tab_stop(2)
         .build();
-    // TODO: Auto-complete    
+    // TODO: Auto-complete
+    let mut rl = Editor::<Completions>::with_config(config);
+    let helper = Completions::new(sym_table.clone());
+    rl.set_helper(Some(helper))
 }
 
 pub fn report_error(err: &anyhow::Error) {
