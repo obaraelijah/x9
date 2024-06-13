@@ -167,12 +167,75 @@ fn format_sexp<W: Write>(sexp: &BasicExpr, out: &mut W, indent_level: usize) -> 
                 write!(out, ")")?;
                 return Ok(());
             }
-            //TODO: impliment seperators
+            let (head, tail) = l.split_first().unwrap();
+            format_sexp(head, out, 0)?;
+            match head.get_sep() {
+                SeparatorStrategy::Newline => {
+                    for i in tail {
+                        writeln!(out)?;
+                        format_sexp(i, out, indent_level + 1)?;
+                    }
+                }
+                SeparatorStrategy::NewlineSans(num) => {
+                    for i in &tail[0..num] {
+                        write!(out, " ")?;
+                        format_sexp(i, out, 0)?;
+                    }
+                    for i in &tail[num..] {
+                        writeln!(out)?;
+                        format_sexp(i, out, indent_level + 1)?;
+                    }
+                }
+                SeparatorStrategy::Space => {
+                    for i in tail {
+                        write!(out, " ")?;
+                        format_sexp(i, out, 0)?;
+                    }
+                } // SeperatorStrategy::Bind => {
+                  //     // Bind looks like
+                  //     // (bind
+                  //     //   (a b))
+                  // }
+            }
             write!(out, ")")?;
+            // if head.is_function_decl() {
+            //     if head.is_named_function_decl() {
+            //         write!(out, "defn {}", tail[0].get_item())?;
+            //     } else {
+            //         write!(out, "fn")?;
+            //     }
+            //     indent_level += 1;
+            //     leftpad(out, indent_level);
+            //     for t in &tail[1..] {
+            //         write!(out, "\n")?;
+            //         format_sexp(t, out, indent_level);
+            //     }
+            //     tail = &[];
+            // } else {
+            //     write!(out, "{}", head.get_item())?;
+            // }
+            // let sep = head.get_sep();
+            // for i in tail {
+            //     write!(out, "{}", sep)?;
+            //     if sep == '\n' {
+            //         format_sexp(i, out, indent_level + 1)?;
+            //     } else {
+            //         format_sexp(i, out, 0)?;
+            //     }
+            // }
         }
     }
     Ok(())
 } 
+
+fn format_string<W: Write>(input: &str, out: &mut W) -> IOResult<()> {
+    let tokens: Vec<Token> = Tokenizer::new(input).into_iter().collect();
+    for sexp in SExprWalker::new(&tokens) {
+        format_sexp(&sexp, out, 0)?;
+        write!(out, "\n\n")?;
+    }
+    Ok(())
+}
 
 pub fn format(_opt: &Options) -> Result<(), i32> {
     // TODO: File input
@@ -183,7 +246,8 @@ pub fn format(_opt: &Options) -> Result<(), i32> {
         .map_err(|e| e.raw_os_error().unwrap_or(1))?;
     let buf = String::from_utf8_lossy(&buf);
     let mut out = io::stdout();
+    format_string(&buf, &mut out).unwrap();
 
-    println!("{}", buf);
+    // println!("{}", buf);
     Ok(())
 } 
