@@ -599,6 +599,20 @@ impl std::fmt::Display for Inspect {
     }
 }
 
+impl Inspect {
+    pub(crate) fn lisp_res(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+        // TODO: check right number of args
+        let inspect_function = exprs[0].get_function()?.clone();
+        let inner = exprs[1].get_iterator()?;
+        let inspect = Inspect {
+            inner,
+            inspect_function,
+            id: random(),
+        };
+        Ok(Expr::LazyIter(Box::new(inspect)))
+    }
+}
+
 impl LazyIter for Inspect {
     fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
         let next = option_try!(self.inner.next(symbol_table)?);
@@ -618,5 +632,39 @@ impl LazyIter for Inspect {
 
     fn id(&self) -> u64 {
         self.id
+    }
+}
+
+#[derive(Clone, Debug)]
+struct IndexGenerator {
+    digits: Arc<Mutex<Vec<Digit>>>,
+    max_count: usize,
+    counter: Counter,
+}
+
+impl IndexGenerator {
+    fn new(max_values: &[usize]) -> Self {
+        let digits = max_values.iter().copied().map(Digit::new).collect();
+        let max_count = max_values.iter().product();
+        IndexGenerator {
+            digits: Arc::new(Mutex::new(digits)),
+            max_count,
+            counter: Counter::zero(),
+        }
+    }
+
+    fn fetch_inc(&self) -> Option<Vec<usize>> {
+        if self.counter.value() >= self.max_count {
+            return None;
+        }
+        let mut digits = self.digits.lock();
+        let ret = digits.iter().map(|d| d.value()).collect();
+        for index in 0..digits.len() {
+            if !digits[index].inc() {
+                break;
+            }
+        }
+        self.counter.fetch_add_one();
+        Some(ret)
     }
 }
