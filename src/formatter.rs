@@ -56,3 +56,26 @@ impl<'input> Iterator for Tokenizer<'input> {
         Some(token)
     }
 }
+
+#[derive(Debug, PartialEq)]
+enum BasicExpr<'input> {
+    Item(&'input str),
+    String(&'input str),
+    Comment(&'input str),
+    List(Box<[BasicExpr<'input>]>),
+}
+
+// Separator
+enum SeparatorStrategy {
+    Space,
+    NewlineSans(usize),
+    Newline,
+    // Bind,
+}
+
+impl BasicExpr<'_> {
+    fn get_sep(&self) -> SeparatorStrategy {
+        todo!()
+    }
+}
+
