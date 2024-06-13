@@ -39,12 +39,12 @@ impl std::fmt::Display for ErrorBridge {
 /// A X9 interpreter instance.
 /// This type can be safely & cheaply cloned. This will copy
 /// modifications to the symbol table (def, defn, foreign functions, etc).
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use x9::ffi::X9Interpreter;
-/// 
+///
 /// let interpreter = X9Interpreter::new();
 /// ```
 pub struct X9Interpreter {

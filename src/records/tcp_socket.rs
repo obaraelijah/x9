@@ -35,7 +35,7 @@ impl PartialEq for TcpListenerRecord {
 
 impl TcpListenerRecord {
     pub(crate) const RECORD_NAME: &'static str = "TcpListenerRecord";
-    
+
     fn bind(args: Vec<Expr>, symbol_table: &SymbolTable) -> LispResult<Self> {
         // TODO: Add exact len latercl
         let address = args[0].get_string()?;

@@ -1,5 +1,5 @@
-use crate::records::{Record, RecordDoc};
 use crate::ast::{Expr, Function, LispResult, Symbol, SymbolTable};
+use crate::records::{Record, RecordDoc};
 use dashmap::DashMap;
 use std::sync::Arc;
 

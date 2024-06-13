@@ -1,8 +1,8 @@
 use im::Vector;
 use regex::Regex;
 
-use crate::records::RecordDoc;
 use crate::ast::{Expr, LispResult, SymbolTable};
+use crate::records::RecordDoc;
 
 #[derive(Debug, Clone)]
 pub(crate) struct RegexRecord {

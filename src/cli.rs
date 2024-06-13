@@ -2,9 +2,10 @@ use rustyline::completion::{Completer, Pair};
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{self, MatchingBracketValidator, Validator};
-use rustyline::{error::ReadlineError, Config, Context, EditMode, Editor};
+use rustyline::{error::ReadlineError, Config, Context, Editor};
 use rustyline_derive::Helper;
 use std::borrow::Cow;
+use std::fs::File;
 use structopt::StructOpt;
 
 use crate::ast::SymbolTable;
@@ -188,7 +189,16 @@ pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
     // TODO: Auto-complete
     let mut rl = Editor::<Completions>::with_config(config);
     let helper = Completions::new(sym_table.clone());
-    rl.set_helper(Some(helper))
+    rl.set_helper(Some(helper));
+    if rl.load_history("history.txt").is_err() {
+        if let Err(e) = File::create("history.txt") {
+            eprintln!("Attempted to create history file, but failed! {}", e);
+        }
+        if rl.load_history("history.txt").is_err() {
+            eprintln!("Successfully created history, but could not load it!")
+        }
+        println!("No previous history.");
+    }
 }
 
 pub fn report_error(err: &anyhow::Error) {

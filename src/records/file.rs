@@ -1,5 +1,5 @@
-use crate::records::RecordDoc;
 use crate::ast::{Expr, LispResult, SymbolTable};
+use crate::records::RecordDoc;
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Seek, Write},
