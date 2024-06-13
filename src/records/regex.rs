@@ -24,6 +24,12 @@ impl PartialEq for RegexRecord {
     }
 }
 
+impl std::hash::Hash for RegexRecord {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.regex_string.hash(state);
+    }
+}
+
 impl RegexRecord {
     pub(crate) const RECORD_NAME: &'static str = "RegexRecord";
 
@@ -31,5 +37,39 @@ impl RegexRecord {
         symbol_table
             .lookup(&Self::RECORD_NAME.into())?
             .call_fn(exprs, symbol_table)
+    }
+}
+
+impl Record for RegexRecord {
+    fn call_method(
+        &self,
+        sym: &str,
+        args: Vector<Expr>,
+        _symbol_table: &SymbolTable,
+    ) -> LispResult<Expr> {
+        try_call_method!(self, sym, args, is_match, captures)
+    }
+
+    fn display(&self) -> String {
+        self.debug()
+    }
+
+    fn debug(&self) -> String {
+        format!("Regex<{}>", self.re)
+    }
+
+    fn clone(&self) -> super::RecordType {
+        Box::new(Clone::clone(self))
+    }
+
+    fn methods(&self) -> Vec<String> {
+        RegexRecord::method_doc()
+            .iter()
+            .map(|(l, _)| l.to_string())
+            .collect()
+    }
+
+    fn type_name(&self) -> String {
+        "Regex".into()
     }
 }
