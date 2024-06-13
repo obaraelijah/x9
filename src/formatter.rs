@@ -1,6 +1,8 @@
 #[derive(Debug, PartialEq, Eq)]
 enum Token<'input> {
-    Iten(&'input str),
+    LeftBrace,
+    RightBrace,
+    Item(&'input str),
     String(&'input str),
     Comment(&'input str),
 }
@@ -20,6 +22,37 @@ impl<'input> Iterator for Tokenizer<'input> {
     type Item = Token<'input>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        let mut iter = self.input.chars().enumerate();
+
+        let (idx, first_non_whitespace) = iter.find(|(_, c)| !c.is_whitespace())?;
+
+        let (range_end, token) = match first_non_whitespace {
+            '(' => (idx, Token::LeftBrace),
+            ')' => (idx, Token::RightBrace),
+            '"' => {
+                let idx_end = iter
+                    .find(|&(_, c)| c == '"') // TODO: quoted strings
+                    .map(|(idx_end, _)| idx_end)
+                    .unwrap_or(self.input.len());
+                (idx_end + 1, Token::String(&self.input[idx + 1..idx_end]))
+            }
+            ';' => {
+                let idx_end = iter
+                    .find(|&(_, c)| c == '\n') // TODO: quoted strings
+                    .map(|(idx, _)| idx + 1)
+                    .unwrap_or(self.input.len());
+                (idx_end, Token::Comment(&self.input[idx..idx_end]))
+            }
+            _ => {
+                let idx_end = iter
+                    .find(|&(_, c)| c.is_whitespace() || c == ')' || c == '(')
+                    .map(|(idx_end, _)| idx_end)
+                    .unwrap_or(self.input.len());
+                (idx_end, Token::Item(&self.input[idx..idx_end]))
+            }
+        };
+        
+        self.input = &self.input[range_end..];
+        Some(token)
     }
 }
