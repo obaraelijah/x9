@@ -56,7 +56,7 @@ impl<'input> Iterator for Tokenizer<'input> {
                 (idx_end, Token::Item(&self.input[idx..idx_end]))
             }
         };
-        
+
         self.input = &self.input[range_end..];
         Some(token)
     }
@@ -107,7 +107,7 @@ impl BasicExpr<'_> {
 }
 
 fn get_sexp<'a>(input: &[Token<'a>]) -> (usize, Box<[BasicExpr<'a>]>) {
-    assert_eq!(input[0], Token::LeftBrace); // Indicates the beginning of a new s-expr.
+    assert_eq!(input[0], Token::LeftBrace);
     let mut buf = Vec::new();
     let mut index = 1;
     while index < input.len() {
@@ -226,7 +226,7 @@ fn format_sexp<W: Write>(sexp: &BasicExpr, out: &mut W, indent_level: usize) -> 
         }
     }
     Ok(())
-} 
+}
 
 fn format_string<W: Write>(input: &str, out: &mut W) -> IOResult<()> {
     let tokens: Vec<Token> = Tokenizer::new(input).into_iter().collect();
@@ -250,7 +250,7 @@ pub fn format(_opt: &Options) -> Result<(), i32> {
 
     // println!("{}", buf);
     Ok(())
-} 
+}
 
 #[cfg(test)]
 mod tests {
