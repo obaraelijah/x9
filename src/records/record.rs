@@ -8,12 +8,23 @@ use crate::ast::{Expr, LispResult, SymbolTable};
 
 pub(crate) type RecordType = Box<dyn Record>;
 
+/// Document Records. Used in the document_records! macro
+/// to properly document your record type.
 pub(crate) trait RecordDoc {
+    /// Public name of the the record.
     fn name() -> &'static str;
+    /// Documentation for that record type.
     fn type_doc() -> &'static str;
+    /// Documentation of the methods.
+    /// (method_name, method_doc)
     fn method_doc() -> &'static [(&'static str, &'static str)];
 }
 
+/// Fundamental trait for records.
+///
+/// Records allow x9 to represent a variety of internally mutable types
+/// while not expanding the Expr enum too much. These types are responsible for
+/// implementing RecordDoc if they want to have documentation.
 pub trait Record: Sync + Send + downcast_rs::DowncastSync {
     /// Call a method on this record.
     /// (.method_name <rec> arg1 arg2 arg3)
