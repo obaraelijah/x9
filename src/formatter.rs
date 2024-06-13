@@ -296,4 +296,50 @@ mod tests {
             ]
         )
     }
+
+    #[test]
+    fn can_sexp_basic() {
+        let input = "32 33";
+        let tokens: Vec<Token> = Tokenizer::new(input).into_iter().collect();
+        let sexps: Vec<BasicExpr> = SExprWalker::new(&tokens).into_iter().collect();
+        assert_eq!(&sexps, &[BasicExpr::Item("32"), BasicExpr::Item("33")]);
+    }
+
+    #[test]
+    fn can_sexp() {
+        let input = "(+ 1 1 (+ 2 2)) (+ 2 1) 32";
+        let tokens: Vec<Token> = Tokenizer::new(input).into_iter().collect();
+        let sexps: Vec<BasicExpr> = SExprWalker::new(&tokens).into_iter().collect();
+
+        assert_eq!(
+            &sexps,
+            &[
+                BasicExpr::List(
+                    vec![
+                        BasicExpr::Item("+"),
+                        BasicExpr::Item("1"),
+                        BasicExpr::Item("1"),
+                        BasicExpr::List(
+                            vec![
+                                BasicExpr::Item("+"),
+                                BasicExpr::Item("2"),
+                                BasicExpr::Item("2"),
+                            ]
+                            .into_boxed_slice()
+                        )
+                    ]
+                    .into_boxed_slice(),
+                ),
+                BasicExpr::List(
+                    vec![
+                        BasicExpr::Item("+"),
+                        BasicExpr::Item("2"),
+                        BasicExpr::Item("1"),
+                    ]
+                    .into_boxed_slice()
+                ),
+                BasicExpr::Item("32")
+            ]
+        )
+    }
 }
