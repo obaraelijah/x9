@@ -1,4 +1,5 @@
-use std::io::{Write, Result as IOResult};
+use crate::cli::Options;
+use std::io::{self, Read, Result as IOResult, Write};
 
 const INDENT_SIZE: usize = 4;
 
@@ -153,3 +154,36 @@ fn leftpad<W: Write>(out: &mut W, indent_level: usize) -> IOResult<()> {
     }
     Ok(())
 }
+
+fn format_sexp<W: Write>(sexp: &BasicExpr, out: &mut W, indent_level: usize) -> IOResult<()> {
+    leftpad(out, indent_level)?;
+    match sexp {
+        BasicExpr::Item(i) => write!(out, "{i}")?,
+        BasicExpr::Comment(i) => writeln!(out, "{i}")?,
+        BasicExpr::String(i) => write!(out, "\"{}\"", i)?,
+        BasicExpr::List(l) => {
+            write!(out, "(")?;
+            if l.is_empty() {
+                write!(out, ")")?;
+                return Ok(());
+            }
+            //TODO: impliment seperators
+            write!(out, ")")?;
+        }
+    }
+    Ok(())
+} 
+
+pub fn format(_opt: &Options) -> Result<(), i32> {
+    // TODO: File input
+    let mut buf = Vec::new();
+    io::stdin()
+        .lock()
+        .read_to_end(&mut buf)
+        .map_err(|e| e.raw_os_error().unwrap_or(1))?;
+    let buf = String::from_utf8_lossy(&buf);
+    let mut out = io::stdout();
+
+    println!("{}", buf);
+    Ok(())
+} 
