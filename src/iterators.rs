@@ -668,3 +668,62 @@ impl IndexGenerator {
         Some(ret)
     }
 }
+
+#[derive(Clone)]
+pub(crate) struct CartesianProduct {
+    lists: Box<[Vector<Expr>]>,
+    index_generator: IndexGenerator,
+}
+
+impl std::fmt::Debug for CartesianProduct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CartesianProduct")
+            .field("lists", &self.lists)
+            .field("indices", &self.index_generator)
+            .finish()
+    }
+}
+
+impl CartesianProduct {
+    pub(crate) fn lisp_res(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+        // TODO: Avoid all of these intermediate allocations.
+        let lists: Vec<Vector<Expr>> = exprs.into_iter().map(|e| e.get_list()).collect::<Result<_, _>>()?;
+        let max_values: Vec<_> = lists.iter().map(|e| e.len()).collect();
+        let index_generator = IndexGenerator::new(&max_values);
+        let me = CartesianProduct {
+            lists: lists.into_boxed_slice(),
+            index_generator,
+        };
+        Ok(Expr::LazyIter(Box::new(me)))
+    }
+}
+
+
+impl std::fmt::Display for CartesianProduct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "CartesianProduct<{:?}>", self.lists)
+    }
+}
+
+impl LazyIter for CartesianProduct {
+    fn next(&self, _symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        let indices = self.index_generator.fetch_inc()?;
+        let mut ret = Vector::new();
+        for (idx, list) in indices.iter().zip(self.lists.iter()) {
+            ret.push_back(list.get(*idx).cloned().unwrap_or(Expr::Nil));
+        }
+        Some(Ok(Expr::Tuple(ret)))
+    }
+
+    fn name(&self) -> &'static str {
+        "CartesianProduct"
+    }
+
+    fn clone(&self) -> Box<dyn LazyIter> {
+        Box::new(Clone::clone(self))
+    }
+
+    fn id(&self) -> u64 {
+        random()
+    }
+}
