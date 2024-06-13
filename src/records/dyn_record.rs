@@ -6,7 +6,8 @@ use std::sync::Arc;
 #[derive(Default, Debug, Clone)]
 pub struct DynRecord {
     name: Symbol,
-    doc: Option<String>,
+    // FIXME: Why did this field exist and why didn't I get a warning for it until now
+    // doc: Option<String>,
     fields: DashMap<Symbol, Expr>,
     initialized: bool,
     fields_order: Vec<Symbol>,
@@ -32,10 +33,25 @@ impl RecordDoc for DynRecord {
     }
 
     fn type_doc() -> &'static str {
-        "Define a Record structure."
+        "Define a Record structure.
+
+Use defmethod to add methods a record.
+
+Example:
+;; Define a record
+(defrecord Vec3 \"Three Dimensional Vector\" x y z)
+
+;; Instantiate a Vec3
+(def v (Vec 1 2 3))
+
+;; Access attributes
+
+v.x    ;; 1
+(.y v) ;; 2
+"
     }
 
     fn method_doc() -> &'static [(&'static str, &'static str)] {
-        &[]
+        todo!()
     }
 }
