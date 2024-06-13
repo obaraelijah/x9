@@ -147,4 +147,12 @@ impl FileRecord {
         self.rewind_file()?;
         Ok(content_len)
     }
+
+    fn append_to_file(&mut self, content: String) -> LispResult<Expr> {
+        self.append(content)
+    }
+
+    fn append_line(&mut self, content: String) -> LispResult<Expr> {
+        self.append(format!("\n{}", content))
+    }
 }
