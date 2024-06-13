@@ -687,7 +687,10 @@ impl std::fmt::Debug for CartesianProduct {
 impl CartesianProduct {
     pub(crate) fn lisp_res(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
         // TODO: Avoid all of these intermediate allocations.
-        let lists: Vec<Vector<Expr>> = exprs.into_iter().map(|e| e.get_list()).collect::<Result<_, _>>()?;
+        let lists: Vec<Vector<Expr>> = exprs
+            .into_iter()
+            .map(|e| e.get_list())
+            .collect::<Result<_, _>>()?;
         let max_values: Vec<_> = lists.iter().map(|e| e.len()).collect();
         let index_generator = IndexGenerator::new(&max_values);
         let me = CartesianProduct {
@@ -697,7 +700,6 @@ impl CartesianProduct {
         Ok(Expr::LazyIter(Box::new(me)))
     }
 }
-
 
 impl std::fmt::Display for CartesianProduct {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
