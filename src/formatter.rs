@@ -57,6 +57,16 @@ impl<'input> Iterator for Tokenizer<'input> {
     }
 }
 
+struct SExprWalker<'input> {
+    input: &'input [Token<'input>],
+}
+
+impl<'input> SExprWalker<'input> {
+    fn new(input: &'input [Token<'input>]) -> Self {
+        Self { input }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 enum BasicExpr<'input> {
     Item(&'input str),
@@ -91,4 +101,44 @@ impl BasicExpr<'_> {
     }
 }
 
+fn get_sexp<'a>(input: &[Token<'a>]) -> (usize, Box<[BasicExpr<'a>]>) {
+    assert_eq!(input[0], Token::LeftBrace); // Indicates the beginning of a new s-expr.
+    let mut buf = Vec::new();
+    let mut index = 1;
+    while index < input.len() {
+        let token = &input[index];
+        match token {
+            Token::Item(i) => buf.push(BasicExpr::Item(i)),
+            Token::String(i) => buf.push(BasicExpr::String(i)),
+            Token::Comment(i) => buf.push(BasicExpr::Comment(i)),
+            Token::RightBrace => return (index + 1, buf.into_boxed_slice()),
+            Token::LeftBrace => {
+                let (idx, sexp) = get_sexp(&input[index..]);
+                buf.push(BasicExpr::List(sexp));
+                index += idx;
+                continue;
+            }
+        }
+        index += 1;
+    }
+    (index, buf.into_boxed_slice())
+}
 
+impl<'input> Iterator for SExprWalker<'input> {
+    type Item = BasicExpr<'input>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (end, token) = match self.input.get(0)? {
+            Token::LeftBrace => {
+                let (idx, sexp) = get_sexp(self.input);
+                (idx, BasicExpr::List(sexp))
+            }
+            Token::Item(i) => (1, BasicExpr::Item(i)),
+            Token::String(i) => (1, BasicExpr::String(i)),
+            Token::Comment(i) => (1, BasicExpr::Comment(i)),
+            Token::RightBrace => panic!("Called SExprWalker with RightBrace as first!"),
+        };
+        self.input = &self.input[end..];
+        Some(token)
+    }
+}
