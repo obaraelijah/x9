@@ -1,3 +1,5 @@
+use crate::records::RecordDoc;
+use crate::ast::{Expr, LispResult, SymbolTable};
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Seek, Write},
@@ -5,8 +7,6 @@ use std::{
 
 use anyhow::anyhow;
 use im::Vector;
-
-use crate::ast::{Expr, LispResult, SymbolTable};
 
 #[derive(Debug)]
 pub(crate) struct FileRecord {
@@ -154,5 +154,21 @@ impl FileRecord {
 
     fn append_line(&mut self, content: String) -> LispResult<Expr> {
         self.append(format!("\n{}", content))
+    }
+}
+
+impl RecordDoc for FileRecord {
+    fn name() -> &'static str {
+        "FileRecord"
+    }
+
+    fn type_doc() -> &'static str {
+        "Manipulate files in x9."
+    }
+
+    fn method_doc() -> &'static [(&'static str, &'static str)] {
+        &[
+        // TODO:  Examples
+        ]
     }
 }
