@@ -251,3 +251,49 @@ pub fn format(_opt: &Options) -> Result<(), i32> {
     // println!("{}", buf);
     Ok(())
 } 
+
+#[cfg(test)]
+mod tests {
+    use crate::formatter::BasicExpr;
+
+    use super::{SExprWalker, Token, Tokenizer};
+
+    #[test]
+    fn can_tokenize_strings() {
+        let input = r#"(+ "hello" "world")"#;
+        let tokens: Vec<Token> = Tokenizer::new(input).into_iter().collect();
+        assert_eq!(
+            &tokens,
+            &[
+                Token::LeftBrace,
+                Token::Item("+"),
+                Token::String("hello"),
+                Token::String("world"),
+                Token::RightBrace,
+            ]
+        )
+    }
+
+    #[test]
+    fn can_tokenize_basic() {
+        let input = "33 32";
+        let tokens: Vec<Token> = Tokenizer::new(input).into_iter().collect();
+        assert_eq!(&tokens, &[Token::Item("33"), Token::Item("32"),])
+    }
+
+    #[test]
+    fn can_tokenize() {
+        let input = "(+ 122222      1)";
+        let tokens: Vec<Token> = Tokenizer::new(input).into_iter().collect();
+        assert_eq!(
+            &tokens,
+            &[
+                Token::LeftBrace,
+                Token::Item("+"),
+                Token::Item("122222"),
+                Token::Item("1"),
+                Token::RightBrace,
+            ]
+        )
+    }
+}
