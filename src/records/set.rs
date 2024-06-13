@@ -5,6 +5,8 @@ use im::Vector;
 
 use crate::ast::Expr;
 
+use super::RecordDoc;
+
 #[derive(Default, Clone, PartialEq, Eq)]
 pub(crate) struct SetRecord(HashSet<Expr>);
 
@@ -40,5 +42,21 @@ impl SetRecord {
 
     fn difference(&self, other: &Self) -> Self {
         SetRecord(self.0.difference(&other.0).cloned().collect())
+    }
+}
+
+impl RecordDoc for SetRecord {
+    fn name() -> &'static str {
+        SetRecord::RECORD_NAME
+    }
+
+    fn type_doc() -> &'static str {
+        "Basic Hash Set in x7."
+    }
+
+    fn method_doc() -> &'static [(&'static str, &'static str)] {
+        &[
+            // TODO: Examples
+        ]
     }
 }
