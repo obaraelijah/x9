@@ -1,10 +1,5 @@
 use rustyline::{
-    completion::{Completer, Pair},
-    error::ReadlineError,
-    highlight::{Highlighter, MatchingBracketHighlighter},
-    hint::Hinter,
-    validate::{self, MatchingBracketValidator, Validator},
-    Context,
+    completion::{Completer, Pair}, error::ReadlineError, highlight::{Highlighter, MatchingBracketHighlighter}, hint::Hinter, validate::{self, MatchingBracketValidator, Validator}, Config, Context
 };
 use rustyline_derive::Helper;
 use std::borrow::Cow;
@@ -44,6 +39,10 @@ impl Default for Options {
         }
     }
 }
+
+// HUGE thank you the rustyline people for providing a nice example
+// for me to follow.
+// https://github.com/kkawakam/rustyline/blob/master/examples/example.rs#L1
 
 #[derive(Helper)]
 struct Completions {
@@ -159,5 +158,30 @@ impl Hinter for Completions {
             .into_iter()
             .next()
             .map(|s| s[last_sym..].to_owned())
+    }
+}
+
+pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
+    let conf = Config::builder()
+        .edit_mode(rustyline::EditMode::Vi)
+        .auto_add_history(true)
+        .indent_size(2)
+        .tab_stop(2)
+        .build();
+    // TODO: Auto-complete    
+}
+
+pub fn report_error(err: &anyhow::Error) {
+    let first = err.chain().last().unwrap();
+    println!("Error: {}\n", first);
+
+    let mut print_stackstace = true;
+
+    for e in err.chain().rev().skip(1) {
+        if print_stackstace {
+            println!("Stacktrace:");
+        }
+        print_stackstace = false;
+        println!("  - {}", e)
     }
 }
