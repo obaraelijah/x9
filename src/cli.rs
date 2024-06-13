@@ -10,6 +10,12 @@ use crate::ast::SymbolTable;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "x9", about = "x9 Programming Language")]
 pub struct Options {
+    #[structopt(
+        short = "l",
+        long,
+        help = "Show the functions loaded from the x9 stdlib"
+    )]
+    pub show_loading_stdlib: bool,
     pub files: Vec<String>,
     #[structopt(
         short = "e",
@@ -17,6 +23,13 @@ pub struct Options {
         help = "Execute the file(s), and then load the interpreter"
     )]
     pub load_file: bool,
+
+    #[structopt(
+        short = "no-nat",
+        long,
+        help = "Load the standard library written in x9. Default: false"
+    )]
+    pub do_not_load_native_stdlib: bool,
 
     #[structopt(
         short = "f",
@@ -32,8 +45,10 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Options {
+            show_loading_stdlib: false,
             files: Vec::with_capacity(0),
             load_file: false,
+            do_not_load_native_stdlib: false,
             formatter: false,
             debugger: false,
         }
