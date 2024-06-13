@@ -1,3 +1,7 @@
+use std::io::{Write, Result as IOResult};
+
+const INDENT_SIZE: usize = 4;
+
 #[derive(Debug, PartialEq, Eq)]
 enum Token<'input> {
     LeftBrace,
@@ -141,4 +145,11 @@ impl<'input> Iterator for SExprWalker<'input> {
         self.input = &self.input[end..];
         Some(token)
     }
+}
+
+fn leftpad<W: Write>(out: &mut W, indent_level: usize) -> IOResult<()> {
+    for _ in 0..indent_level * INDENT_SIZE {
+        write!(out, " ")?;
+    }
+    Ok(())
 }
