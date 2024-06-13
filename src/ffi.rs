@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::ast::Expr;
+use crate::ast::{Expr, SymbolTable};
 
 pub trait ForeignData
 where
@@ -36,4 +36,29 @@ impl std::fmt::Display for ErrorBridge {
     }
 }
 
-// TODO: Build x9 interpreter.
+/// A X9 interpreter instance.
+/// This type can be safely & cheaply cloned. This will copy
+/// modifications to the symbol table (def, defn, foreign functions, etc).
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use x9::ffi::X9Interpreter;
+/// 
+/// let interpreter = X9Interpreter::new();
+/// ```
+pub struct X9Interpreter {
+    symbol_table: SymbolTable,
+}
+
+impl Default for X9Interpreter {
+    fn default() -> Self {
+        X9Interpreter::new()
+    }
+}
+
+impl X9Interpreter {
+    pub fn new() -> Self {
+        todo!()
+    }
+}
