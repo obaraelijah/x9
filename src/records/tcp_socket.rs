@@ -1,4 +1,7 @@
-use crate::ast::{Expr, Function, LispResult, SymbolTable};
+use crate::{
+    exact_len,
+    ast::{Expr, Function, LispResult, SymbolTable}
+};
 use anyhow::anyhow;
 use std::{io::BufReader, net::TcpListener};
 use std::{
@@ -38,6 +41,7 @@ impl TcpListenerRecord {
 
     fn bind(args: Vec<Expr>, symbol_table: &SymbolTable) -> LispResult<Self> {
         // TODO: Add exact len latercl
+        exact_len!(args, 2);
         let address = args[0].get_string()?;
         let accept_fn = args[1].get_function()?.clone();
         let tcp_listener = TcpListener::bind(address)

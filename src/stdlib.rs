@@ -18,6 +18,7 @@ use crate::{
 
 /// Macro to check if we have the right number of args,
 /// and throw a nice error if we don't.
+#[macro_export]
 macro_rules! exact_len {
     // Single length case
     ($args:expr, $len:literal) => {
