@@ -106,3 +106,7 @@ impl Record for DynRecord {
         }
     }   
 }
+
+impl DynRecord {
+    
+}
