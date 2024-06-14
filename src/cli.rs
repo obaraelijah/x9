@@ -3,7 +3,7 @@ use rustyline::completion::{Completer, Pair};
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{self, MatchingBracketValidator, Validator};
-use rustyline::{error::ReadlineError, Config, Context,EditMode, Editor};
+use rustyline::{error::ReadlineError, Config, Context, EditMode, Editor};
 use rustyline_derive::Helper;
 use std::borrow::Cow;
 use std::fs::File;
@@ -244,6 +244,7 @@ pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
             }
         }
     }
+    rl.save_history("history.txt").unwrap();
 }
 
 pub fn report_error(err: &anyhow::Error) {
