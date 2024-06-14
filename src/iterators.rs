@@ -151,6 +151,16 @@ impl std::fmt::Display for LazyFilter {
     }
 }
 
+impl LazyFilter {
+    pub(crate) fn lisp_res(inner: IterType, f: Function) -> LispResult<Expr> {
+        Ok(Expr::LazyIter(Box::new(LazyFilter {
+            inner,
+            f,
+            id: random(),
+        })))
+    }
+}
+
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 #[derive(Default, Debug)]

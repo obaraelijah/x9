@@ -5,12 +5,12 @@ use std::{
 
 use anyhow::{anyhow, bail, ensure};
 use bigdecimal::{BigDecimal, One, ToPrimitive};
-use im::Vector;
+use im::{vector, Vector};
 use itertools::Itertools;
 
 use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
-    bad_types, interner::InternedString, iterators::LazyMap,
+    bad_types, interner::InternedString, iterators::{IterType, LazyFilter, LazyMap},
 };
 
 /// Macro to check if we have the right number of args,
@@ -350,6 +350,51 @@ fn foreach(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> 
     };
     Ok(Expr::Nil)
 }
+
+fn filter(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    if exprs.len() == 1 {
+        // TODO: Transducer case
+        // return Transducer::new(|exprs, sym| filter(&exprs[0]))
+        todo!()
+    }
+    exact_len!(exprs, 2);
+    let f = &exprs[0];
+    if let Ok(iter) = exprs[1].get_iterator() {
+        return LazyFilter::lisp_res(iter, f.get_function()?.clone());
+    }
+    let l = exprs[1].get_list()?;
+    let mut res = Vector::new();
+    for expr in l {
+        if f.call_fn(Vector::unit(expr.clone()), symbol_table)?
+            .is_truthy(symbol_table)?
+        {
+            res.push_back(expr);
+        }
+    }
+    Ok(Expr::List(res))
+}
+
+/// Example Usage
+/// (reduce + 0 (list 1 2 3 4 5)) ; => 15
+///(reduce * 1 (list 1 2 3 4 5)) ; => 120
+fn reduce_iterator(
+    f: &Expr,
+    init: Option<Expr>,
+    tail: IterType,
+    symbol_table: &SymbolTable,
+) -> LispResult<Expr> {
+    let mut init = match init {
+        Some(e) => e,
+        None => tail.next(symbol_table).ok_or_else(|| {
+            anyhow!("Attempted to reduce without initial argument using an empty list")
+        })??,
+    };
+    while let Some(next) = tail.next(symbol_table) {
+        init = f.call_fn(vector![init, next?], symbol_table)?;
+    }
+    Ok(init)
+}
+
 
 // Dict
 
