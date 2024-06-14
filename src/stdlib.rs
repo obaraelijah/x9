@@ -4,6 +4,32 @@ use im::Vector;
 
 use crate::{ast::{Expr, LispResult, SymbolTable}, bad_types};
 
+/// Macro to check if we have the right number of args,
+/// and throw a nice error if we don't.
+macro_rules! exact_len {
+    // Single length case
+    ($args:expr, $len:literal) => {
+        use anyhow::ensure;
+        use crate::ast::ProgramError;
+        ensure!($args.len() == $len, ProgramError::WrongNumberOfArgs($len));
+    };
+    // Multiple lengths case
+    ($args:expr, $($len:literal),+) => {
+        {
+            let expected_lengths = [$($len),+];
+            if !expected_lengths.contains(&$args.len()) {
+                bail!(anyhow!(format!(
+                    "Wrong number of args! Expected number of args to be one of {:?} but received {}",
+                    expected_lengths,
+                    $args.len()
+                )));
+            }
+        }
+    };
+}
+
+
+
 // ARITHMETIC
 
 // TODO: Check if the types make sense to compare. (i.e. ordering, etc)
@@ -32,7 +58,7 @@ fn gte_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Exp
 }
 
 fn rem_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-    // TODO: Check for exact length
+    exact_len!(exprs, 2);
     exprs[0].clone() % &exprs[1]
 }
 
@@ -67,7 +93,7 @@ fn xor(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
 }
 
 fn not(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
-    // TODO get exact len
+    exact_len!(exprs, 1);
     Ok(Expr::Bool(!exprs[0].is_truthy(symbol_table)?))
 }
 
@@ -107,7 +133,7 @@ fn div_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Exp
 }
 
 fn inc_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-    // TODO get exact len
+    exact_len!(exprs, 1);
     let res = match exprs[0].clone() {
         Expr::Integer(i) => Expr::Integer(i + 1), // TODO: Handle overflow
         Expr::Num(n) => Expr::num(n + bigdecimal::BigDecimal::one()),
@@ -117,7 +143,7 @@ fn inc_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Exp
 }
 
 fn dec_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-    // TODO get exact len
+    exact_len!(exprs, 1);
     let res = match exprs[0].clone() {
         Expr::Integer(i) => Expr::Integer(i - 1), // TODO: Handle overflow
         Expr::Num(n) => Expr::num(n - bigdecimal::BigDecimal::one()),
@@ -127,7 +153,7 @@ fn dec_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Exp
 }
 
 fn pow(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-    // TODO get exact len
+    exact_len!(exprs, 2);
     let base = exprs[0].get_num()?;
     let exp = exprs[1].get_num()?.round(0).to_u32().unwrap(); // TODO: Handle error
     if exp == 0 {
@@ -141,7 +167,7 @@ fn pow(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
 }
 
 fn int(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-    // TODO get exact len
+    exact_len!(exprs, 1);
     if let Ok(s) = exprs[0].get_string() {
         let res: u64 = s
             .parse()
@@ -157,7 +183,7 @@ fn int(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
 }
 
 fn floor(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-    // TODO get exact len
+    exact_len!(exprs, 1);
     let n = exprs[0]
         .get_num()?
         .to_f64()
