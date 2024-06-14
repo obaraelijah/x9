@@ -1,6 +1,7 @@
 use crate::ast::{Expr, Function, LispResult, Symbol, SymbolTable};
 use crate::records::{Record, RecordDoc};
 use dashmap::DashMap;
+use im::Vector;
 use std::sync::Arc;
 
 #[derive(Default, Debug, Clone)]
@@ -54,4 +55,54 @@ v.x    ;; 1
     fn method_doc() -> &'static [(&'static str, &'static str)] {
         todo!()
     }
+}
+
+impl Record for DynRecord {
+    fn call_method(
+        &self,
+        sym: &str,
+        args: Vector<Expr>,
+        symbol_table: &SymbolTable,
+    ) -> LispResult<Expr> {
+        self.call_method(sym, args, symbol_table)
+    }
+
+    fn has_method(&self, sym: &str) -> bool {
+        self.methods.contains_key(&sym.into())
+    }
+
+    fn display(&self) -> String {
+        todo!()
+    }
+
+    fn debug(&self) -> String {
+        self.display()
+    }
+
+    fn clone(&self) -> super::RecordType {
+        Box::new(Clone::clone(self))
+    }
+
+    fn methods(&self) -> Vec<String> {
+        self.methods.iter().map(|m| m.key().to_string()).collect()
+    }
+
+    fn type_name(&self) -> String {
+        self.name.to_string()
+    }
+
+    fn call_as_fn(&self, _args: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+        todo!()
+    }
+
+    fn defmethod(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        todo!()
+    }
+
+    fn is_equal(&self, other: &dyn Record) -> bool {
+        match other.downcast_ref::<Self>() {
+            Some(other_dyn) => self == other_dyn,
+            None => false,
+        }
+    }   
 }
