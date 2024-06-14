@@ -1,6 +1,7 @@
 use std::{
     io::Write,
-    sync::{atomic::AtomicBool, Arc}, time::Instant,
+    sync::{atomic::AtomicBool, Arc},
+    time::Instant,
 };
 
 use anyhow::{anyhow, bail, ensure};
@@ -10,7 +11,9 @@ use itertools::Itertools;
 
 use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
-    bad_types, interner::InternedString, iterators::{IterType, LazyFilter, LazyMap},
+    bad_types,
+    interner::InternedString,
+    iterators::{IterType, LazyFilter, LazyMap, Skip},
 };
 
 /// Macro to check if we have the right number of args,
@@ -395,6 +398,27 @@ fn reduce_iterator(
     Ok(init)
 }
 
+fn any(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let pred = exprs[0].get_function()?;
+    let body = &exprs[1].get_list()?;
+    for b in body.iter().cloned() {
+        if pred
+            .call_fn(im::Vector::unit(b), symbol_table)?
+            .is_truthy(symbol_table)?
+        {
+            return Ok(Expr::Bool(true));
+        }
+    }
+    Ok(Expr::Bool(false))
+}
+
+fn skip(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let skips_left = exprs[0].get_usize()?;
+    let inner = exprs[1].get_iterator()?;
+    Skip::lisp_res(skips_left, inner)
+}
 
 // Dict
 
