@@ -1,4 +1,5 @@
-use bigdecimal::{BigDecimal, One};
+use anyhow::anyhow;
+use bigdecimal::{BigDecimal, ToPrimitive,  One};
 use im::Vector;
 
 use crate::{ast::{Expr, LispResult, SymbolTable}, bad_types};
@@ -123,4 +124,46 @@ fn dec_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Exp
         otherwise => return bad_types!("num or int", otherwise),
     };
     Ok(res)
+}
+
+fn pow(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    // TODO get exact len
+    let base = exprs[0].get_num()?;
+    let exp = exprs[1].get_num()?.round(0).to_u32().unwrap(); // TODO: Handle error
+    if exp == 0 {
+        return Ok(Expr::num(BigDecimal::one()));
+    }
+    let mut res = base.clone();
+    for _ in 0..(exp - 1) {
+        res *= &base;
+    }
+    Ok(Expr::num(res))
+}
+
+fn int(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    // TODO get exact len
+    if let Ok(s) = exprs[0].get_string() {
+        let res: u64 = s
+            .parse()
+            .map_err(|_| anyhow!("Could not convert to an int."))?;
+        return Ok(Expr::num(res));
+    }
+    let res = match &exprs[0] {
+        Expr::Integer(i) => Expr::Integer(*i),
+        Expr::Num(i) => Expr::num(i.round(0)),
+        otherwise => return bad_types!("num", otherwise),
+    };
+    Ok(res)
+}
+
+fn floor(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    // TODO get exact len
+    let n = exprs[0]
+        .get_num()?
+        .to_f64()
+        .ok_or_else(|| anyhow!("Number cannot be converted to a floating point"))?
+        .trunc()
+        .to_u64()
+        .ok_or_else(|| anyhow!("Truncated floating point could not be converted a u64"))?;
+    Ok(Expr::num(BigDecimal::from(n)))
 }
