@@ -21,18 +21,18 @@ impl<T> Clone for StructRecord<T> {
             }
             None => (Arc::clone(&self.inner), self.id),
         };
-        Self { 
-            inner, 
+        Self {
+            inner,
             name: self.name,
             fields: self.fields.clone(),
             clone_fn: self.clone_fn.clone(),
-            initialized: self.initialized, 
+            initialized: self.initialized,
             id,
         }
     }
 }
 
-impl<T>  StructRecord<T> {
+impl<T> StructRecord<T> {
     pub(crate) fn record_builder(name: &'static str) -> StructRecord<T> {
         todo!()
     }
