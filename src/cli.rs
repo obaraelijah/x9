@@ -202,6 +202,7 @@ pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
     }
     let quit_symbol = Expr::Symbol("quit".into());
     let exit_symbol = Expr::Symbol("exit".into());
+    // TODO: add bytecode com-pile
     loop {
         let readline = rl.readline(">>> ");
         match readline {
@@ -249,7 +250,7 @@ pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
 
 pub fn report_error(err: &anyhow::Error) {
     let first = err.chain().last().unwrap();
-    println!("Error: {}\n", first);
+    println!("Error: {first}\n");
 
     let mut print_stackstace = true;
 
@@ -258,6 +259,6 @@ pub fn report_error(err: &anyhow::Error) {
             println!("Stacktrace:");
         }
         print_stackstace = false;
-        println!("  - {}", e)
+        println!("  - {e}")
     }
 }
