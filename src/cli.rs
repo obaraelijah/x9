@@ -1,14 +1,15 @@
+use crate::parser::read;
 use rustyline::completion::{Completer, Pair};
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{self, MatchingBracketValidator, Validator};
-use rustyline::{error::ReadlineError, Config, Context, Editor};
+use rustyline::{error::ReadlineError, Config, Context,EditMode, Editor};
 use rustyline_derive::Helper;
 use std::borrow::Cow;
 use std::fs::File;
 use structopt::StructOpt;
 
-use crate::ast::SymbolTable;
+use crate::ast::{Expr, SymbolTable};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "x9", about = "x9 Programming Language")]
@@ -181,7 +182,7 @@ impl Hinter for Completions {
 
 pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
     let config = Config::builder()
-        .edit_mode(rustyline::EditMode::Vi)
+        .edit_mode(EditMode::Vi)
         .auto_add_history(true)
         .indent_size(2)
         .tab_stop(2)
@@ -198,6 +199,50 @@ pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
             eprintln!("Successfully created history, but could not load it!")
         }
         println!("No previous history.");
+    }
+    let quit_symbol = Expr::Symbol("quit".into());
+    let exit_symbol = Expr::Symbol("exit".into());
+    loop {
+        let readline = rl.readline(">>> ");
+        match readline {
+            Ok(line) => {
+                if line.is_empty() {
+                    continue;
+                }
+                for expr in read(line.as_str()) {
+                    let prog = match expr {
+                        Ok(prog) => prog,
+                        Err(e) => {
+                            println!("{e:?}");
+                            continue;
+                        }
+                    };
+                    if prog == quit_symbol || prog == exit_symbol {
+                        println!("cy@");
+                        return;
+                    }
+                    match prog.eval(sym_table) {
+                        Ok(p) => println!("{p:?}"),
+                        Err(e) => {
+                            report_error(&e);
+                            continue;
+                        }
+                    }
+                }
+            }
+            Err(ReadlineError::Interrupted) => {
+                println!("Bye :]");
+                break;
+            }
+            Err(ReadlineError::Eof) => {
+                println!("cy@");
+                break;
+            }
+            Err(err) => {
+                println!("Error: {err:?}");
+                break;
+            }
+        }
     }
 }
 
