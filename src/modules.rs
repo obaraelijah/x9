@@ -1,8 +1,7 @@
-use crate::{ast::SymbolTable, cli::Options};
 use crate::parser::read;
+use crate::{ast::SymbolTable, cli::Options};
 use std::error::Error;
 use std::fs::File;
-use std::io;
 use std::io::prelude::*;
 use walkdir::WalkDir;
 
@@ -55,9 +54,15 @@ pub(crate) fn recursively_load_dir<P: AsRef<std::path::Path>>(
     Ok(())
 }
 
-pub(crate) fn load_X9_stdlib(
+// Load standard library for x9 language
+pub(crate) fn load_x9_stdlib(
     opts: &Options,
     symbol_table: &SymbolTable,
 ) -> Result<(), Box<dyn Error>> {
-    Ok(())
+    let root_dir = stdlib_dir()?;
+    recursively_load_dir(opts.show_loading_stdlib, root_dir, symbol_table)
+}
+
+pub fn run_file(file_name: &str, symbol_table: &SymbolTable) -> Result<i32, anyhow::Error> {
+    symbol_table.load_file(file_name).map(|_| 0) // TODO: Figure out appropriate success mapping
 }
