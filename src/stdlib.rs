@@ -9,8 +9,8 @@ use im::Vector;
 use itertools::Itertools;
 
 use crate::{
-    ast::{Expr, Function, LispResult, SymbolTable},
-    bad_types, interner::InternedString,
+    ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
+    bad_types, interner::InternedString, iterators::LazyMap,
 };
 
 /// Macro to check if we have the right number of args,
@@ -258,6 +258,96 @@ fn do_loop(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> 
     // (loop (a b c) (expression))
     // (break)
     // (recur 1 2 3)
+    Ok(Expr::Nil)
+}
+
+// FUNC
+
+fn cond(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    ensure!(exprs.len() % 2 == 0, ProgramError::CondBadConditionNotEven);
+    for (pred, body) in exprs.iter().tuples() {
+        if pred.eval(symbol_table)?.is_truthy(symbol_table)? {
+            return body.eval(symbol_table);
+        }
+    }
+    bail!(ProgramError::CondNoExecutionPath)
+}
+
+fn expr_match(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let item = exprs[0].eval(symbol_table)?;
+    let mut iter = exprs.iter().skip(1);
+    ensure!(
+        (exprs.len() - 1) % 2 == 0,
+        anyhow!("Match requires an even list of then")
+    );
+    while let Some(lhs) = iter.next() {
+        let then = iter.next().unwrap();
+        if lhs.is_symbol_underscore() {
+            return then.eval(symbol_table);
+        }
+        let lhs = lhs.eval(symbol_table)?;
+        if lhs == item {
+            return then.eval(symbol_table);
+        }
+    }
+    bail!(anyhow!("No execution paths for match!"))
+}
+
+fn if_gate(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 3);
+    if exprs[0].eval(symbol_table)?.is_truthy(symbol_table)? {
+        exprs[1].eval(symbol_table)
+    } else {
+        exprs[2].eval(symbol_table)
+    }
+}
+
+fn map(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let f = &exprs[0];
+    if let Ok(iter) = exprs[1].get_iterator() {
+        return LazyMap::lisp_res(iter, f.get_function()?.clone());
+    }
+    let mut l = exprs[1].get_list()?;
+    for expr in l.iter_mut() {
+        let old = expr.clone();
+        *expr = f.call_fn(Vector::unit(old), symbol_table)?;
+    }
+    Ok(Expr::List(l))
+}
+
+fn mapt(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    map(exprs, symbol_table).map(|list| match list {
+        Expr::List(l) => Expr::Tuple(l),
+        // If the result is a lazy iterator, keep it unchanged
+        ll @ Expr::LazyIter(_) => ll,
+        _ => unreachable!(),
+    })
+}
+
+fn threading_operator(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let (item, funcs) = exprs.split_at(1);
+    let mut res = item.get(0).cloned().unwrap_or(Expr::Nil);
+    for func in funcs {
+        res = func.call_fn(Vector::unit(res), symbol_table)?;
+    }
+    Ok(res)
+}
+// Like map, but doesn't produce a list.
+fn foreach(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let f = &exprs[0];
+    if let Ok(iter) = exprs[1].get_iterator() {
+        while let Some(x) = iter.next(symbol_table) {
+            f.call_fn(Vector::unit(x?), symbol_table)?;
+        }
+    } else if let Ok(list) = exprs[1].get_list() {
+        for x in list.iter() {
+            f.call_fn(Vector::unit(x.clone()), symbol_table)?;
+        }
+    } else {
+        bail!(ProgramError::BadTypes)
+    };
     Ok(Expr::Nil)
 }
 
