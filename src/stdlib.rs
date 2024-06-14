@@ -1,6 +1,6 @@
 use std::{
     io::Write,
-    sync::{atomic::AtomicBool, Arc},
+    sync::{atomic::AtomicBool, Arc}, time::Instant,
 };
 
 use anyhow::{anyhow, bail, ensure};
@@ -10,7 +10,7 @@ use itertools::Itertools;
 
 use crate::{
     ast::{Expr, Function, LispResult, SymbolTable},
-    bad_types,
+    bad_types, interner::InternedString,
 };
 
 /// Macro to check if we have the right number of args,
@@ -296,4 +296,33 @@ fn get_dict(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr
     let dict = exprs[0].get_dict()?;
     let res = dict.get(&exprs[1]).cloned().unwrap_or(Expr::Nil);
     Ok(res)
+}
+
+fn set_dict(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 3);
+    let mut dict = exprs[0].get_dict()?;
+    let key = exprs[1].clone();
+    let value = exprs[2].clone();
+    dict.insert(key, value);
+    Ok(Expr::Dict(dict))
+}
+
+fn values(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let dict = exprs[0].get_dict()?;
+    Ok(Expr::Tuple(dict.values().cloned().collect()))
+}
+
+fn time(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let start = Instant::now();
+    let _ = exprs[0].eval(symbol_table)?;
+    let end = start.elapsed().as_millis() as u64;
+    Ok(Expr::num(end))
+}
+
+fn interner_stats(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 0);
+    let stats = InternedString::stats();
+    Ok(Expr::string(stats))
 }
