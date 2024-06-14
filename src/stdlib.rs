@@ -263,3 +263,37 @@ fn do_loop(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> 
 
 // Dict
 
+fn make_dict(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    ensure!(
+        exprs.len() % 2 == 0,
+        "Error: dict requires an even list of arguments."
+    );
+    let mut dict = im::HashMap::new();
+    for (key, value) in exprs.iter().tuples() {
+        dict.insert(key.clone(), value.clone());
+    }
+    Ok(Expr::Dict(dict))
+}
+
+fn assoc(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let mut dict = exprs[0].get_dict()?;
+    for (key, value) in exprs.iter().skip(1).tuples() {
+        dict.insert(key.clone(), value.clone());
+    }
+    Ok(Expr::Dict(dict))
+}
+
+fn remove(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let mut dict = exprs[0].get_dict()?;
+    for key in exprs.iter().skip(1) {
+        dict.remove(key);
+    }
+    Ok(Expr::Dict(dict))
+}
+
+fn get_dict(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let dict = exprs[0].get_dict()?;
+    let res = dict.get(&exprs[1]).cloned().unwrap_or(Expr::Nil);
+    Ok(res)
+}
