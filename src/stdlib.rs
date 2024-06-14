@@ -1,7 +1,7 @@
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, One};
 use im::Vector;
 
-use crate::ast::{Expr, LispResult, SymbolTable};
+use crate::{ast::{Expr, LispResult, SymbolTable}, bad_types};
 
 // ARITHMETIC
 
@@ -78,7 +78,13 @@ fn eq_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr
 
 fn add_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     let mut init = exprs[0].clone();
-    exprs.iter().skip(1).try_fold(init, |acc, x| acc + x)
+    for e in exprs.iter().skip(1) {
+        init = (init + e)?;
+    }
+    // TODO: Figure out why this is slightly slower
+    // exprs.iter().skip(1).try_fold(init, |acc, x| acc + x)
+
+    Ok(init)
 }
 
 fn sub_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
@@ -87,4 +93,34 @@ fn sub_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Exp
         return Ok(Expr::num(BigDecimal::from(-1) * init.get_num()?));
     }
     exprs.iter().skip(1).try_fold(init, |acc, x| acc - x)
+}
+
+fn mult_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let init = exprs[0].clone();
+    exprs.iter().skip(1).try_fold(init, |acc, x| acc * x)
+}
+
+fn div_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let init = exprs[0].clone();
+    exprs.iter().skip(1).try_fold(init, |acc, x| acc / x)
+}
+
+fn inc_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    // TODO get exact len
+    let res = match exprs[0].clone() {
+        Expr::Integer(i) => Expr::Integer(i + 1), // TODO: Handle overflow
+        Expr::Num(n) => Expr::num(n + bigdecimal::BigDecimal::one()),
+        otherwise => return bad_types!("num or int", otherwise),
+    };
+    Ok(res)
+}
+
+fn dec_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    // TODO get exact len
+    let res = match exprs[0].clone() {
+        Expr::Integer(i) => Expr::Integer(i - 1), // TODO: Handle overflow
+        Expr::Num(n) => Expr::num(n - bigdecimal::BigDecimal::one()),
+        otherwise => return bad_types!("num or int", otherwise),
+    };
+    Ok(res)
 }
