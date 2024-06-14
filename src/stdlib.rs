@@ -1,11 +1,17 @@
-use std::{io::Write, sync::{atomic::AtomicBool, Arc}};
+use std::{
+    io::Write,
+    sync::{atomic::AtomicBool, Arc},
+};
 
 use anyhow::{anyhow, bail, ensure};
-use bigdecimal::{BigDecimal, ToPrimitive,  One};
+use bigdecimal::{BigDecimal, One, ToPrimitive};
 use im::Vector;
 use itertools::Itertools;
 
-use crate::{ast::{Expr, Function, LispResult, SymbolTable}, bad_types};
+use crate::{
+    ast::{Expr, Function, LispResult, SymbolTable},
+    bad_types,
+};
 
 /// Macro to check if we have the right number of args,
 /// and throw a nice error if we don't.
@@ -30,8 +36,6 @@ macro_rules! exact_len {
         }
     };
 }
-
-
 
 // ARITHMETIC
 
@@ -103,7 +107,7 @@ fn not(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
 fn eq_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     let first = &exprs[0];
     let all_eq = exprs.iter().all(|x| first == x);
-    Ok(Expr::Bool(all_eq)) 
+    Ok(Expr::Bool(all_eq))
 }
 
 fn add_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
@@ -256,3 +260,6 @@ fn do_loop(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> 
     // (recur 1 2 3)
     Ok(Expr::Nil)
 }
+
+// Dict
+
