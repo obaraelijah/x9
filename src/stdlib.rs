@@ -1,8 +1,11 @@
-use anyhow::anyhow;
+use std::{io::Write, sync::{atomic::AtomicBool, Arc}};
+
+use anyhow::{anyhow, bail, ensure};
 use bigdecimal::{BigDecimal, ToPrimitive,  One};
 use im::Vector;
+use itertools::Itertools;
 
-use crate::{ast::{Expr, LispResult, SymbolTable}, bad_types};
+use crate::{ast::{Expr, Function, LispResult, SymbolTable}, bad_types};
 
 /// Macro to check if we have the right number of args,
 /// and throw a nice error if we don't.
@@ -192,4 +195,64 @@ fn floor(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
         .to_u64()
         .ok_or_else(|| anyhow!("Truncated floating point could not be converted a u64"))?;
     Ok(Expr::num(BigDecimal::from(n)))
+}
+
+// PRINT
+
+fn print(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    for expr in &exprs {
+        print!("{}", expr);
+        if let Err(e) = std::io::stdout().flush() {
+            eprintln!("Failed to flush stdout! {e}");
+        }
+    }
+    Ok(Expr::num(exprs.len()))
+}
+
+fn println(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let item = exprs.iter().join("");
+    println!("{item}");
+    Ok(Expr::Nil)
+}
+
+fn input(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let mut buf = String::new();
+    print(exprs, _symbol_table)?;
+    std::io::stdin()
+        .read_line(&mut buf)
+        .map_err(|e| anyhow!("{e}"))?;
+    Ok(Expr::string(buf.trim().to_string()))
+}
+
+fn type_of(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    Ok(Expr::string(exprs[0].get_type_str().into()))
+}
+
+fn do_loop(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1, 2);
+    // TODO: Handle args / add recur
+    let _args = exprs[0].get_list()?;
+    let body = &exprs[1];
+    let break_flag = Arc::new(AtomicBool::new(false));
+    let break_flag_clone = break_flag.clone();
+    let break_fn_f = move |ex: Vector<Expr>, _sym: &SymbolTable| {
+        exact_len!(ex, 0);
+        break_flag_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+        Ok(Expr::Nil)
+    };
+    let break_fn = Function::new("break".into(), 0, Arc::new(break_fn_f), false);
+    let mut new_sym = symbol_table.clone();
+    new_sym.add_func_local_str("break", Expr::function(break_fn));
+    loop {
+        if break_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            break;
+        }
+        body.eval(&new_sym)?;
+    }
+    // (loop () (println "Hello World"))
+    // (loop (a b c) (expression))
+    // (break)
+    // (recur 1 2 3)
+    Ok(Expr::Nil)
 }
