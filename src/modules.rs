@@ -1,3 +1,4 @@
+#[allow(clippy::unnecessary_wraps)]
 use crate::parser::read;
 use crate::{ast::SymbolTable, cli::Options};
 use std::error::Error;
