@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, path::Path};
 
 use crate::ast::{Expr, SymbolTable};
 
@@ -47,6 +47,7 @@ impl std::fmt::Display for ErrorBridge {
 ///
 /// let interpreter = X9Interpreter::new();
 /// ```
+#[derive(Clone)]
 pub struct X9Interpreter {
     symbol_table: SymbolTable,
 }
@@ -57,8 +58,25 @@ impl Default for X9Interpreter {
     }
 }
 
+impl Drop for X9Interpreter {
+    fn drop(&mut self) {
+        self.symbol_table.wait_on_threads();
+    }
+}
+
 impl X9Interpreter {
+    /// Make a new interpreter instance.
     pub fn new() -> Self {
         todo!()
     }
+
+    /// Recursively load a provided standard library directory.
+    pub fn load_lib_dir<P: AsRef<Path>>(&self, lib_path: P) -> Result<(), Box<dyn Error>> {
+        crate::modules::recursively_load_dir(false, lib_path, &self.symbol_table)
+    }
+}
+
+/// Trait to help convert x9's Expr to primitive types.
+pub trait ExprHelper {
+    fn to_i64(&self) -> Result<u64, Box<dyn Error + Send>>;
 }
