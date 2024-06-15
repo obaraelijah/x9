@@ -6,6 +6,7 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{
     ast::{Expr, LispResult, SymbolTable},
     ffi::ForeignData,
+    records::Record,
 };
 
 type ReadFn<T> =
@@ -163,6 +164,64 @@ impl<T> StructRecord<T> {
     }
 }
 
+impl<T: 'static + PartialEq + Sync + Send> Record for StructRecord<T> {
+    fn call_method(
+            &self,
+            sym: &str,
+            args: Vector<Expr>,
+            symbol_table: &SymbolTable,
+        ) -> LispResult<Expr> {
+        todo!()
+    }
+
+    fn has_method(&self, sym: &str) -> bool {
+        self.read_method_map.contains_key(sym) || self.write_method_map.contains_key(sym)
+    }
+
+    fn display(&self) -> String {
+        self.debug()
+    }
+
+    fn debug(&self) -> String {
+        todo!()
+    }
+
+    fn clone(&self) -> super::RecordType {
+        Box::new(Clone::clone(self))
+    }
+
+    fn methods(&self) -> Vec<String> {
+        self.read_method_map
+            .keys()
+            .chain(self.read_method_map.keys())
+            .map(|s| s.to_string())
+            .collect()
+    }
+
+    fn type_name(&self) -> String {
+        self.name.into()
+    }
+
+    fn id(&self) -> u64 {
+        self.id
+    }
+
+    fn get_type_str(&self) -> String {
+        self.type_name()
+    }
+
+    fn call_as_fn(&self, _args: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+        todo!()
+    }
+
+    fn is_equal(&self, other: &dyn Record) -> bool {
+        match other.downcast_ref::<Self>() {
+            Some(sr_other) => *self.inner.lock() == *sr_other.inner.lock(),
+            None => false,
+        }
+    }
+}
+
 // TODO: Use a macro for this
 pub(crate) trait IntoReadFn<Args, T, Out> {
     fn into_read_fn(self) -> ReadFn<T>;
@@ -172,8 +231,8 @@ pub(crate) trait IntoWriteFn<Args, T, Out> {
     fn into_write_fn(self) -> WriteFn<T>;
 }
 
-// IntoReadFn
 
+// Massive set of trait impls
 // IntoReadFn: Zero args
 
 impl<F, T, Out> IntoReadFn<(), T, Out> for F
