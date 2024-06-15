@@ -1,6 +1,6 @@
 use crate::ast::{Expr, Function, LispResult, Symbol, SymbolTable};
-use crate::{record, unknown_method};
 use crate::records::{Record, RecordDoc};
+use crate::{record, unknown_method};
 use anyhow::bail;
 use dashmap::DashMap;
 use im::Vector;
@@ -138,7 +138,7 @@ impl Record for DynRecord {
             Some(other_dyn) => self == other_dyn,
             None => false,
         }
-    }   
+    }
 }
 
 // (defrecord rec-name "optional-doc" field1 field2 field3)

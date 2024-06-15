@@ -1,6 +1,6 @@
 use crate::{
+    ast::{Expr, Function, LispResult, SymbolTable},
     exact_len,
-    ast::{Expr, Function, LispResult, SymbolTable}
 };
 use anyhow::anyhow;
 use std::{io::BufReader, net::TcpListener};

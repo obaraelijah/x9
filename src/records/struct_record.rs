@@ -3,10 +3,15 @@ use im::Vector;
 use parking_lot::Mutex;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::{ast::{Expr, LispResult, SymbolTable}, ffi::ForeignData};
+use crate::{
+    ast::{Expr, LispResult, SymbolTable},
+    ffi::ForeignData,
+};
 
-type ReadFn<T> = Box<dyn Fn(&StructRecord<T>, Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
-type WriteFn<T> = Box<dyn Fn(&StructRecord<T>, Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
+type ReadFn<T> =
+    Box<dyn Fn(&StructRecord<T>, Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
+type WriteFn<T> =
+    Box<dyn Fn(&StructRecord<T>, Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
 type CloneFn<T> = Arc<dyn Fn(&T) -> T + Sync + Send>;
 type InitFn<T> = Arc<dyn Fn(Vector<Expr>, &SymbolTable) -> LispResult<T> + Sync + Send>;
 type DisplayFn<T> = Arc<dyn Fn(&T) -> String + Sync + Send>;
@@ -106,9 +111,9 @@ impl<T> StructRecord<T> {
         f: F,
     ) -> Self {
         Arc::get_mut(&mut self.read_method_map)
-        .unwrap()
-        .insert(sym, f.into_read_fn());
-    self
+            .unwrap()
+            .insert(sym, f.into_read_fn());
+        self
     }
 
     pub(crate) fn add_method_mut<Args, Out, F: IntoWriteFn<Args, T, Out>>(
@@ -133,7 +138,7 @@ impl<T> StructRecord<T> {
 
     pub(crate) fn clone_with(mut self, f: &'static (dyn Fn(&T) -> T + Sync + Send)) -> Self {
         self.clone_fn = Some(Arc::new(f));
-        self 
+        self
     }
 
     pub(crate) fn display_with(mut self, f: &'static (dyn Fn(&T) -> String + Sync + Send)) -> Self {
