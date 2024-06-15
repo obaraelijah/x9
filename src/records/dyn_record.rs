@@ -1,7 +1,10 @@
 use crate::ast::{Expr, Function, LispResult, Symbol, SymbolTable};
+use crate::record;
 use crate::records::{Record, RecordDoc};
+use anyhow::bail;
 use dashmap::DashMap;
 use im::Vector;
+use itertools::Itertools;
 use std::sync::Arc;
 
 #[derive(Default, Debug, Clone)]
@@ -72,7 +75,18 @@ impl Record for DynRecord {
     }
 
     fn display(&self) -> String {
-        todo!()
+        if self.initialized {
+            format!(
+                "Record<{}, fields=[ {} ]>",
+                self.name,
+                self.fields_order
+                    .iter()
+                    .map(|v| format!("{}: {}", v, &*self.fields.get(v).unwrap()))
+                    .join(" ")
+            )
+        } else {
+            format!("Record<{}, uninitialized>", self.name)
+        }
     }
 
     fn debug(&self) -> String {
@@ -91,8 +105,27 @@ impl Record for DynRecord {
         self.name.to_string()
     }
 
-    fn call_as_fn(&self, _args: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-        todo!()
+    fn call_as_fn(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        if args.len() != self.fields_order.len() {
+            bail!(
+                "{} requires {} fields [ {} ], but only received {} arguments",
+                self.display(),
+                self.fields_order.len(),
+                self.fields_order.iter().join(" "),
+                args.len()
+            )
+        }
+        let fields = DashMap::new();
+        let fields_value_iter = self.fields_order.iter().cloned().zip(args.iter().cloned());
+        for (field, value) in fields_value_iter {
+            fields.insert(field, value.eval(symbol_table)?);
+        }
+        let rec = DynRecord {
+            fields,
+            initialized: true,
+            ..Clone::clone(self)
+        };
+        record!(rec)
     }
 
     fn defmethod(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
