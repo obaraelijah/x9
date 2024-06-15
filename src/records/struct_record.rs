@@ -122,13 +122,39 @@ impl<T> StructRecord<T> {
         self
     }
 
-    pub(crate) fn add_field<Out: ForeignData>(
+    // pub(crate) fn add_field<Out: ForeignData>(
+    //     mut self,
+    //     sym: &'static str,
+    //     f: &'static (dyn Fn(&T) -> Out + Sync + Send),
+    // ) -> Self {
+    //     Arc::get_mut(&mut self.fields).unwrap().push(sym);
+    //     self.add_method_zero(sym, f)
+    // }
+
+    pub(crate) fn clone_with(mut self, f: &'static (dyn Fn(&T) -> T + Sync + Send)) -> Self {
+        self.clone_fn = Some(Arc::new(f));
+        self 
+    }
+
+    pub(crate) fn display_with(mut self, f: &'static (dyn Fn(&T) -> String + Sync + Send)) -> Self {
+        self.display_fn = Some(Arc::new(f));
+        self
+    }
+
+    pub(crate) fn init_fn<I: ForeignData + std::fmt::Debug>(
         mut self,
-        sym: &'static str,
-        f: &'static (dyn Fn(&T) -> Out + Sync + Send),
+        f: &'static (dyn Fn(Vec<I>, &SymbolTable) -> LispResult<T> + Sync + Send),
     ) -> Self {
-        Arc::get_mut(&mut self.fields).unwrap().push(sym);
-        self.add_method_zero(sym, f)
+        // TODO: Impliment init logic
+        self.init_fn = Some(Arc::new(move |v: Vector<Expr>, sym: &SymbolTable| {
+            let mut my_v = Vec::with_capacity(v.len());
+            for i in v {
+                let converted = crate::convert_arg!(I, &i);
+                my_v.push(converted)
+            }
+            (f)(my_v, sym)
+        }));
+        self
     }
 }
 

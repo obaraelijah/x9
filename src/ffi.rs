@@ -80,3 +80,13 @@ impl X9Interpreter {
 pub trait ExprHelper {
     fn to_i64(&self) -> Result<u64, Box<dyn Error + Send>>;
 }
+
+#[macro_export]
+macro_rules! convert_arg {
+    ($t:ident, $e:expr) => {{
+        match $t::from_x9($e) {
+            Ok(v) => v,
+            Err(e) => return Err(anyhow!("{e:?}")),
+        }
+    }};
+}
