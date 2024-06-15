@@ -110,6 +110,26 @@ impl<T> StructRecord<T> {
         .insert(sym, f.into_read_fn());
     self
     }
+
+    pub(crate) fn add_method_mut<Args, Out, F: IntoWriteFn<Args, T, Out>>(
+        mut self,
+        sym: &'static str,
+        f: F,
+    ) -> Self {
+        Arc::get_mut(&mut self.read_method_map)
+            .unwrap()
+            .insert(sym, f.into_write_fn());
+        self
+    }
+
+    pub(crate) fn add_field<Out: ForeignData>(
+        mut self,
+        sym: &'static str,
+        f: &'static (dyn Fn(&T) -> Out + Sync + Send),
+    ) -> Self {
+        Arc::get_mut(&mut self.fields).unwrap().push(sym);
+        self.add_method_zero(sym, f)
+    }
 }
 
 // TODO: Use a macro for this
