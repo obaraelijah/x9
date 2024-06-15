@@ -1,5 +1,6 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use im::Vector;
+use itertools::Itertools;
 use parking_lot::Mutex;
 use std::{collections::HashMap, sync::Arc};
 
@@ -7,6 +8,7 @@ use crate::{
     ast::{Expr, LispResult, SymbolTable},
     ffi::ForeignData,
     records::Record,
+    unknown_method,
 };
 
 type ReadFn<T> =
@@ -166,12 +168,33 @@ impl<T> StructRecord<T> {
 
 impl<T: 'static + PartialEq + Sync + Send> Record for StructRecord<T> {
     fn call_method(
-            &self,
-            sym: &str,
-            args: Vector<Expr>,
-            symbol_table: &SymbolTable,
-        ) -> LispResult<Expr> {
-        todo!()
+        &self,
+        sym: &str,
+        args: Vector<Expr>,
+        symbol_table: &SymbolTable,
+    ) -> LispResult<Expr> {
+        if !self.initialized {
+            bail!(
+                "Method {} called on uninitialized record {} with args [ {} ]",
+                sym,
+                self.display(),
+                args.iter().join(" ")
+            )
+        }
+
+        match sym {
+            "ref_count" => Ok(Expr::num(Arc::strong_count(&self.inner))),
+            "id" => Ok(Expr::num(self.id)),
+            sym => {
+                if let Some(ff) = self.read_method_map.get(sym) {
+                    return (ff)(self, args, symbol_table);
+                }
+                if let Some(ff) = self.read_method_map.get(sym) {
+                    return (ff)(self, args, symbol_table);
+                }
+                unknown_method!(self, sym)
+            }
+        }
     }
 
     fn has_method(&self, sym: &str) -> bool {
@@ -183,7 +206,21 @@ impl<T: 'static + PartialEq + Sync + Send> Record for StructRecord<T> {
     }
 
     fn debug(&self) -> String {
-        todo!()
+        if self.initialized {
+            match self.display_fn {
+                Some(ref ff) => {
+                    let guard = self.inner.lock();
+                    (ff)(&guard)
+                }
+                None => format!(
+                    "Record<{} field=[ {} ]>",
+                    self.name,
+                    self.fields.iter().join(" ")
+                ),
+            }
+        } else {
+            format!("Record<{}, uninitialized>", self.name)
+        }
     }
 
     fn clone(&self) -> super::RecordType {
@@ -210,8 +247,25 @@ impl<T: 'static + PartialEq + Sync + Send> Record for StructRecord<T> {
         self.type_name()
     }
 
-    fn call_as_fn(&self, _args: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-        todo!()
+    fn call_as_fn(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        let args = args
+            .into_iter()
+            .map(|e| e.eval(symbol_table))
+            .collect::<Result<_, _>>()?;
+        match self.init_fn {
+            Some(ref ff) => {
+                let new_inner = (ff)(args, symbol_table).map_err(|e| anyhow!("{e:?}"))?;
+                let mut new_me = Clone::clone(self);
+                new_me.inner = Arc::new(Mutex::new(new_inner));
+                new_me.initialized = true;
+                crate::record!(new_me)
+            }
+            None => {
+                let mut new_me = Clone::clone(self);
+                new_me.initialized = true;
+                crate::record!(new_me)
+            }
+        }
     }
 
     fn is_equal(&self, other: &dyn Record) -> bool {
@@ -230,7 +284,6 @@ pub(crate) trait IntoReadFn<Args, T, Out> {
 pub(crate) trait IntoWriteFn<Args, T, Out> {
     fn into_write_fn(self) -> WriteFn<T>;
 }
-
 
 // Massive set of trait impls
 // IntoReadFn: Zero args
