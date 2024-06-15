@@ -140,6 +140,52 @@ impl Record for DynRecord {
     }   
 }
 
+// (defrecord rec-name "optional-doc" field1 field2 field3)
+// Adds rec-name to symbol table
+// (.defmethod rec-name method-name
+//   "optional doc"
+//   (arg1)
+//   ;; body
+//   (+ arg1 field1 field2 field3)) ;; fields are added to the symbol table
+
 impl DynRecord {
-    
+    pub fn defrecord(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        let name = exprs[0].get_symbol_string()?;
+        let mut skip_to_fields = 1;
+        if let Some(s) = exprs.get(1) {
+            if let Ok(s) = s.get_string() {
+                skip_to_fields += 1;
+                symbol_table.add_doc_item(name.to_string(), s);
+            }
+        }
+        let fields_order = exprs
+            .iter()
+            .skip(skip_to_fields)
+            .map(|e| e.get_symbol_string())
+            .try_collect()?;
+        let rec = DynRecord {
+            name,
+            fields_order,
+            initialized: false,
+            ..Default::default()
+        };
+        let rec = Expr::Record(Box::new(rec));
+        symbol_table.add_local(&exprs[0], &rec)?;
+        Ok(rec)
+    }
+
+    pub fn defmethod_x9(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        let rec = exprs[0].eval(symbol_table)?.get_record()?;
+        rec.defmethod(exprs.skip(1), symbol_table)
+    }
+
+    fn add_method_x9(&self, exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+        if self.initialized {
+            bail!("Cannot add methods to initialized record {}", self.name)
+        }
+        let method_name = exprs[0].get_symbol_string()?;
+        let method_symbol = format!("{}.{}", self.type_name(), method_name);
+        // TODO: Functions && doc
+        Ok(Expr::Nil)
+    }
 }
