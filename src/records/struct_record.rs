@@ -1,8 +1,9 @@
+use anyhow::anyhow;
 use im::Vector;
 use parking_lot::Mutex;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::ast::{Expr, LispResult, SymbolTable};
+use crate::{ast::{Expr, LispResult, SymbolTable}, ffi::ForeignData};
 
 type ReadFn<T> = Box<dyn Fn(&StructRecord<T>, Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
 type WriteFn<T> = Box<dyn Fn(&StructRecord<T>, Vector<Expr>, &SymbolTable) -> LispResult<Expr> + Sync + Send>;
@@ -100,9 +101,14 @@ impl<T: Default + 'static + PartialEq> StructRecord<T> {
 
 impl<T> StructRecord<T> {
     pub(crate) fn add_method<Args, Out, F: IntoReadFn<Args, T, Out>>(
-        
+        mut self,
+        sym: &'static str,
+        f: F,
     ) -> Self {
-        todo!()
+        Arc::get_mut(&mut self.read_method_map)
+        .unwrap()
+        .insert(sym, f.into_read_fn());
+    self
     }
 }
 
@@ -113,4 +119,41 @@ pub(crate) trait IntoReadFn<Args, T, Out> {
 
 pub(crate) trait IntoWriteFn<Args, T, Out> {
     fn into_write_fn(self) -> WriteFn<T>;
+}
+
+// IntoReadFn
+
+// IntoReadFn: Zero args
+
+impl<F, T, Out> IntoReadFn<(), T, Out> for F
+where
+    F: Fn(&T) -> Out + Sync + Send + 'static,
+    Out: ForeignData,
+{
+    fn into_read_fn(self) -> ReadFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 0);
+            let s = sr.inner.lock();
+            (self)(&s).to_x9().map_err(|e| anyhow!("{e:?}"))
+        };
+        Box::new(ff)
+    }
+}
+
+// IntoWriteFn
+
+// IntoWriteFn: Zero args
+impl<F, T, Out> IntoWriteFn<(), T, Out> for F
+where
+    F: Fn(&mut T) -> Out + Sync + Send + 'static,
+    Out: ForeignData,
+{
+    fn into_write_fn(self) -> WriteFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 0);
+            let mut s = sr.inner.lock();
+            (self)(&mut s).to_x9().map_err(|e| anyhow!("{e:?}"))
+        };
+        Box::new(ff)
+    }
 }
