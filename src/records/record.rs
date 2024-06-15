@@ -119,7 +119,7 @@ macro_rules! record {
 #[macro_export]
 macro_rules! unknown_method {
     ($self:expr, $method:expr) => {{
-        use itertools::Itertools;
+        use anyhow::anyhow;
         Err(anyhow!(
             "Unknown method `{}` on {}\n\nHelp! {} has the following methods:\n\n{}",
             $method,
