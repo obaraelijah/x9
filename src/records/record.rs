@@ -1,10 +1,9 @@
+use crate::ast::{Expr, LispResult, SymbolTable};
 use anyhow::bail;
 use core::hash::Hash;
 use core::hash::Hasher;
 use im::Vector;
 use std::ops::Deref;
-
-use crate::ast::{Expr, LispResult, SymbolTable};
 
 pub(crate) type RecordType = Box<dyn Record>;
 
@@ -115,4 +114,34 @@ macro_rules! record {
     ($e:expr) => {
         Ok(Expr::Record(Box::new($e)))
     };
+}
+
+#[macro_export]
+macro_rules! unknown_method {
+    ($self:expr, $method:expr) => {{
+        use itertools::Itertools;
+        Err(anyhow!(
+            "Unknown method `{}` on {}\n\nHelp! {} has the following methods:\n\n{}",
+            $method,
+            $self.display(),
+            $self.type_name(),
+            $self
+                .methods()
+                .iter()
+                .map(|s| format!("- {}", s))
+                .join("\n")
+        ))
+    }};
+}
+
+#[macro_export]
+macro_rules! try_call_method {
+    ($self:expr, $sym:expr, $args:expr, $($method_name:ident),*) => {
+        match $sym {
+            $(
+                stringify!($method_name) => $self.$method_name($args),
+            )*
+                _ => unknown_method!($self, $sym)
+        }
+    }
 }

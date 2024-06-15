@@ -5,6 +5,7 @@ use anyhow::bail;
 use dashmap::DashMap;
 use im::Vector;
 use itertools::Itertools;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 #[derive(Default, Debug, Clone)]
@@ -186,6 +187,46 @@ impl DynRecord {
         let method_name = exprs[0].get_symbol_string()?;
         let method_symbol = format!("{}.{}", self.type_name(), method_name);
         // TODO: Functions && doc
+        let (arg_list, body) = if let Ok(doc) = exprs[1].get_string() {
+            symbol_table.add_doc_item(method_symbol.clone(), doc);
+            (exprs[2].get_list()?, exprs[3].clone())
+        } else {
+            (exprs[1].get_list()?, exprs[2].clone())
+        };
+        let method_fn = move |_args: Vector<Expr>, sym: &SymbolTable| body.eval(sym);
+        let f = Function::new_named_args(
+            method_symbol.into(),
+            arg_list.len(),
+            Arc::new(method_fn),
+            arg_list
+                .into_iter()
+                .map(|e| e.get_symbol_string())
+                .try_collect()?,
+            true,
+            HashMap::new(),
+        )?;
+        self.methods.insert(method_name, f);
         Ok(Expr::Nil)
+    }
+
+    fn call_method(
+        &self,
+        method_name: &str,
+        args: Vector<Expr>,
+        symbol_table: &SymbolTable,
+    ) -> LispResult<Expr> {
+        todo!()
+        // let method_name = method_name.into();
+
+        // // First check attributes
+        // // if let Some(field_value) = self.fields.get(&method_name) {
+        // //     return Ok(field_value.clone());
+        // // }
+
+        // // // Finally look it up
+        // // match self.methods.get(&method_name) {
+        // //     // todo!()
+        // // }
+        // Ok(())
     }
 }
