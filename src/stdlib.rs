@@ -4,7 +4,7 @@ use std::{
     time::Instant,
 };
 
-use anyhow::{anyhow, bail, ensure};
+use anyhow::{anyhow, bail, ensure, Context};
 use bigdecimal::{BigDecimal, One, ToPrimitive};
 use im::{vector, Vector};
 use itertools::Itertools;
@@ -308,6 +308,54 @@ fn doc(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
     Ok(Expr::string(doc))
 }
 
+fn inline_transform(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let data = exprs[0].get_list()?;
+    let functions = exprs[1].get_list()?;
+
+    Ok(Expr::Tuple(
+        functions
+            .iter()
+            .zip(data)
+            .map(|(f, x)| f.call_fn(im::Vector::unit(x), symbol_table))
+            .collect::<LispResult<Vector<Expr>>>()?,
+    ))
+}
+
+// XXX: Closure lifetime resolution is some magic shit.
+//      For some reason it compiles now no idea why  ¯\_(ツ)_/¯
+// #[inline(always)]
+// fn lifetimes_are_hard<F>(f: F) -> F
+// where
+//     F: for<'c> Fn(Vector<Expr>, &'c SymbolTable) -> LispResult<Expr> + Sync + Send,
+// {
+//     f
+// }
+
+fn partial(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    if exprs.is_empty() {
+        bail!("Partial requires at least one argument!");
+    }
+    let f = exprs[0]
+        .get_function()
+        .with_context(|| "Note: Partial requires the first item to be a function")?
+        .clone();
+    let rest_args = exprs.skip(1);
+    let rest_args_len = rest_args.len();
+    let remaining = f.minimum_args.saturating_sub(rest_args_len);
+    let partial_fn_name = format!("Partial<{}; remaining={}>", f, remaining);
+    let new_f = move |args: Vector<Expr>, sym: &SymbolTable| {
+        let mut new_arg_list: Vector<Expr> = rest_args.iter().chain(args.iter()).cloned().collect();
+        if new_arg_list.len() >= f.minimum_args {
+            f.call_fn(new_arg_list, sym)
+        } else {
+            new_arg_list.push_front(Expr::function(f.clone()));
+            partial(new_arg_list, sym)
+        }
+    };
+    let ff = Function::new(partial_fn_name, remaining, Arc::new(new_f), true);
+    Ok(Expr::function(ff))
+}
 
 // PRINT
 
