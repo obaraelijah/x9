@@ -1,7 +1,7 @@
 use std::{
     io::Write,
     sync::{atomic::AtomicBool, Arc},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use anyhow::{anyhow, bail, ensure, Context};
@@ -355,6 +355,60 @@ fn partial(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr>
     };
     let ff = Function::new(partial_fn_name, remaining, Arc::new(new_f), true);
     Ok(Expr::function(ff))
+}
+
+// TODO: Make this work
+fn comp(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let compose = move |es, sym: &SymbolTable| {
+        let mut res: Vector<Expr> = es;
+        for func in exprs.iter().rev() {
+            let fn_call = func.call_fn(res, sym);
+            res = match fn_call {
+                Ok(e) => Vector::unit(e),
+                // Ok(l) => match l.get_list() {
+                //     Ok(li) => li,
+                //     Err(e) => return Err(e),
+                // },
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(Expr::List(res))
+    };
+    let f = Function::new("AnonCompFn".into(), 1, Arc::new(compose), true);
+    Ok(Expr::function(f))
+}
+
+fn def(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    symbol_table.add_local(&exprs[0], &exprs[1].eval(symbol_table)?)?;
+    Ok(Expr::Nil)
+}
+
+fn exprs_do(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    for expr in exprs.clone().slice(..exprs.len() - 1).iter() {
+        expr.eval(symbol_table)?;
+    }
+    exprs[exprs.len() - 1].eval(symbol_table)
+}
+
+fn panic(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let msg = if let Expr::String(s) = &exprs[0] {
+        s.to_string()
+    } else {
+        format!("{}", exprs[0])
+    };
+    panic!("{}", msg);
+}
+
+fn sleep(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let dur = exprs[0]
+        .get_num()?
+        .to_u64()
+        .ok_or_else(|| anyhow!("Failed to convert {} to u64", exprs[0]))?;
+    std::thread::sleep(Duration::from_secs(dur));
+    Ok(Expr::Nil)
 }
 
 // PRINT
