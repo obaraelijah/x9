@@ -692,3 +692,14 @@ fn interner_stats(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResul
     let stats = InternedString::stats();
     Ok(Expr::string(stats))
 }
+
+// LISTS
+
+fn list(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    Ok(Expr::List(exprs))
+}
+
+fn tuple(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    Ok(Expr::Tuple(exprs))
+}
+
