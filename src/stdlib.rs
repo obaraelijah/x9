@@ -205,6 +205,110 @@ fn floor(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     Ok(Expr::num(BigDecimal::from(n)))
 }
 
+// MISC
+
+fn ident(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    Ok(exprs[0].clone())
+}
+
+fn ident_exists(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let iden = exprs[0].get_symbol()?;
+    Ok(Expr::Bool(symbol_table.symbol_exists(&iden)))
+}
+
+fn quote(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    Ok(Expr::Quote(exprs))
+}
+
+fn symbol(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    if let Ok(s) = exprs[0].get_string() {
+        Ok(Expr::Symbol(s.into()))
+    } else {
+        bad_types!("string", exprs[0])
+    }
+}
+
+fn string(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    if let Ok(s) = exprs[0].get_string() {
+        Ok(Expr::string(s))
+    } else {
+        Ok(Expr::string(format!("{}", &exprs[0])))
+    }
+}
+
+fn bool(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    exprs[0].is_truthy(symbol_table).map(Expr::Bool)
+}
+
+fn eval(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    exprs[0].eval(symbol_table)
+}
+
+fn parse(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let program = exprs[0].get_string()?;
+    let parse_res: Vector<Expr> = crate::parser::read(&program)
+        .into_iter()
+        .collect::<LispResult<_>>()?;
+    Ok(Expr::Tuple(parse_res))
+}
+
+fn apply(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    exprs[0].call_fn(exprs[1].get_list()?, symbol_table)
+}
+
+fn err(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let msg = exprs.iter().join("");
+    Err(anyhow!(msg))
+}
+
+fn all_symbols(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 0);
+    let all_syms = symbol_table.get_canonical_doc_order();
+    Ok(Expr::List(
+        all_syms
+            .into_iter()
+            .map(|e| Expr::Symbol(e.into()))
+            .collect(),
+    ))
+}
+
+fn include(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let file_path = exprs[0].get_string()?;
+    symbol_table.load_file(file_path)
+}
+
+fn doc(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    // TODO: Make records nice (merge Record and RecordDoc?)
+    let sym = exprs[0].get_symbol_string()?;
+    if let Some(doc) = symbol_table.get_doc_item(&sym.to_string()) {
+        return Ok(Expr::string(doc));
+    }
+
+    let sym_eval = exprs[0].eval(symbol_table)?;
+    if let Ok(f) = sym_eval.get_function() {
+        if let Some(doc) = symbol_table.get_doc_item(&f.symbol.to_string()) {
+            return Ok(Expr::string(doc));
+        }
+    }
+
+    // Last ditch effort: eval it
+    let doc = symbol_table
+        .get_doc_item(&sym_eval.get_symbol_string()?.to_string())
+        .unwrap_or_else(|| format!("No documentation for {}", sym));
+    Ok(Expr::string(doc))
+}
+
+
 // PRINT
 
 fn print(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
