@@ -1102,11 +1102,7 @@ fn go(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
     Ok(Expr::Nil)
 }
 
-fn chan(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-    exact_len!(exprs, 0);
-    let (write, read) = crate::records::make_chan();
-    Ok(Expr::Tuple(vector![write, read]))
-}
+// TODO: Add chan
 
 fn shuffle(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     exact_len!(exprs, 1);
