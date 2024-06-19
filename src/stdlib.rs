@@ -13,7 +13,7 @@ use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
     interner::InternedString,
-    iterators::{IterType, LazyFilter, LazyMap, Skip},
+    iterators::{IterType, LazyFilter, LazyList, LazyMap, Skip},
 };
 
 /// Macro to check if we have the right number of args,
@@ -605,6 +605,36 @@ fn reduce_iterator(
     Ok(init)
 }
 
+/// reduce
+/// (f init coll)
+fn reduce(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2, 3);
+    let f = &exprs[0];
+    let (mut init, list) = if exprs.len() == 2 {
+        if exprs[1].is_iterator() {
+            let iter = exprs[1].get_iterator()?;
+            return reduce_iterator(f, None, iter, symbol_table);
+        }
+        let mut list = exprs[1].get_list()?;
+        ensure!(
+            !list.is_empty(),
+            "Attempted to reduce without initial argument using an empty list"
+        );
+        let head = list.pop_front().unwrap();
+        (head, list)
+    } else {
+        if exprs[2].is_iterator() {
+            let iter = exprs[2].get_iterator()?;
+            return reduce_iterator(f, Some(exprs[1].clone()), iter, symbol_table);
+        }
+        (exprs[1].clone(), exprs[2].get_list()?)
+    };
+    for item in list {
+        init = f.call_fn(vector![init, item], symbol_table)?;
+    }
+    Ok(init)
+}
+
 fn any(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
     exact_len!(exprs, 2);
     let pred = exprs[0].get_function()?;
@@ -620,12 +650,74 @@ fn any(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
     Ok(Expr::Bool(false))
 }
 
+fn all(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let pred = exprs[0].get_function()?;
+    let body = &exprs[1].get_list()?;
+    for b in body.iter().cloned() {
+        if !pred
+            .call_fn(im::Vector::unit(b), symbol_table)?
+            .is_truthy(symbol_table)?
+        {
+            return Ok(Expr::Bool(false));
+        }
+    }
+    Ok(Expr::Bool(true))
+}
+
 fn skip(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     exact_len!(exprs, 2);
     let skips_left = exprs[0].get_usize()?;
     let inner = exprs[1].get_iterator()?;
     Skip::lisp_res(skips_left, inner)
 }
+
+fn lazy(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    if let Ok(iter) = exprs[0].get_iterator() {
+        return Ok(Expr::LazyIter(iter));
+    }
+    if let Ok(list) = exprs[0].get_list() {
+        return LazyList::lisp_new(list);
+    }
+    // let iter = match &exprs[0] {
+    //     Expr::LazyIter(iter) => iter.clone(),
+    //     _ => return bad_types!("iter", &exprs[0]),
+    // };
+    // Ok(Expr::LazyIter(iter))
+    Ok(Expr::Nil)
+}
+
+fn bind(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let symbols = &exprs[0];
+    let mut sym_copy = symbol_table.clone();
+    let list = symbols.get_list()?;
+    ensure!(
+        list.len() % 2 == 0,
+        anyhow!("Error: bind requires an even list of expressions, but was given a list of length {}. List given was: {}", list.len(), symbols)
+    );
+
+    // TODO: Use func_locals to avoid lock juggling overhead
+    for (bind_sym, value) in list.into_iter().tuples() {
+        let evaled_value = value.eval(&sym_copy)?;
+        // List pattern sugar
+        if let Ok(list) = bind_sym.get_list() {
+            let vals_iter = evaled_value
+                .get_list()?
+                .into_iter()
+                .chain(repeat(Expr::Nil));
+            for (sym, val) in list.into_iter().zip(vals_iter) {
+                sym_copy.add_func_local(sym, val)?;
+            }
+        } else {
+            // TODO: Don't clone here
+            sym_copy.add_func_local(bind_sym, evaled_value)?;
+        }
+    }
+
+    exprs[1].eval(&sym_copy)
+}
+
 
 // Dict
 
@@ -702,4 +794,6 @@ fn list(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
 fn tuple(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     Ok(Expr::Tuple(exprs))
 }
+
+use std::iter::repeat;
 
