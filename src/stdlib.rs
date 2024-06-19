@@ -1190,4 +1190,28 @@ fn name_of(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr>
 
 // RECORDS
 
+fn call_method(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let rec = exprs[0].get_record()?;
+    let method = &exprs[1].get_string()?;
+    let args = exprs.clone().slice(2..);
+    rec.call_method(method, args, symbol_table)
+}
+
+fn doc_methods(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let sym: Cow<str> = match &exprs[0] {
+        Expr::Symbol(s) => Cow::Owned(s.to_string()),
+        Expr::Record(r) => r.type_name().into(),
+        otherwise => return bad_types!("Symbol or Record", otherwise),
+    };
+    let docs = symbol_table
+        .get_doc_methods(&sym)
+        .into_iter()
+        .map(|(doc, method)| Expr::Tuple(vector![Expr::string(doc), Expr::string(method)]))
+        .collect();
+    Ok(Expr::List(docs))
+}
+
+
+use std::borrow::Cow;
 use std::iter::repeat;
