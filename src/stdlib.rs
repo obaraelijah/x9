@@ -900,5 +900,69 @@ fn chars(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     ))
 }
 
+fn split(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let split_by = exprs[0].get_string()?;
+    let string = exprs[1].get_string()?;
+    Ok(Expr::Tuple(
+        string
+            .split(&split_by)
+            .map(|substr| Expr::string(substr.into()))
+            .collect(),
+    ))
+}
+
+fn replace(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 3);
+    let from = exprs[0].get_string()?;
+    let to = exprs[1].get_string()?;
+    let string = exprs[2].get_string()?;
+    Ok(Expr::string(string.replace(&from, &to)))
+}
+
+fn cons(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    exprs[1].push_front(exprs[0].clone())
+}
+
+fn head(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    if let Ok(list) = exprs[0].get_list() {
+        if list.is_empty() {
+            return Ok(Expr::Nil);
+        } else {
+            return Ok(list[0].clone());
+        }
+    }
+    let string = exprs[0].get_string()?;
+    if string.is_empty() {
+        Ok(Expr::Nil)
+    } else {
+        let first_char = match string.chars().next() {
+            Some(c) => c.to_string(),
+            None => "".to_string(),
+        };
+        Ok(Expr::string(first_char))
+    }
+}
+
+fn tail(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    if let Ok(mut list) = exprs[0].get_list() {
+        if list.is_empty() {
+            return Ok(Expr::Nil);
+        } else {
+            return Ok(Expr::Tuple(list.slice(1..)));
+        }
+    }
+    let string = exprs[0].get_string()?;
+    if string.is_empty() {
+        Ok(Expr::Nil)
+    } else {
+        let rest = string.chars().skip(1).collect();
+        Ok(Expr::string(rest))
+    }
+}
+
 use std::iter::repeat;
 
