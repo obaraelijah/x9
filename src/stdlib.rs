@@ -718,6 +718,85 @@ fn bind(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
     exprs[1].eval(&sym_copy)
 }
 
+fn make_func(
+    exprs: Vector<Expr>,
+    symbol_table: &SymbolTable,
+    name: InternedString,
+) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let arg_symbols = exprs[0].get_list()?;
+    let min_args = match arg_symbols.iter().position(|e| e.symbol_matches("&")) {
+        Some(index) => index,
+        None => arg_symbols.len(),
+    };
+    let body = exprs[1].clone();
+    let f = Arc::new(move |_args: Vector<Expr>, sym: &SymbolTable| body.eval(sym));
+    let f = Function::new_named_args(
+        name,
+        min_args,
+        f,
+        arg_symbols
+            .iter()
+            .map(|e| e.get_symbol_string())
+            .try_collect()?,
+        true,
+        symbol_table
+            .get_func_locals()
+            .iter()
+            .map(|(k, v)| (*k, v.clone()))
+            .collect(),
+    )?;
+    Ok(Expr::function(f))
+}
+
+fn func(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    make_func(exprs, symbol_table, "AnonFn".into())
+}
+
+fn defn(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 3, 4);
+    let (name, doc, args, body) = if exprs.len() == 3 {
+        (exprs[0].clone(), None, exprs[1].clone(), exprs[2].clone())
+    } else {
+        (
+            exprs[0].clone(),
+            Some(exprs[1].eval(symbol_table)?.get_string()?),
+            exprs[2].clone(),
+            exprs[3].clone(),
+        )
+    };
+
+    let sym_name = name.get_symbol_string()?;
+
+    // Make a function
+    let func = make_func(vector![args, body], symbol_table, sym_name)?;
+
+    // Add the function to the symbol table
+    def(vector![name, func.clone()], symbol_table)?;
+
+    // If given docs, add it to the symbol table
+    if let Some(doc) = doc {
+        symbol_table.add_doc_item(sym_name.to_string(), doc);
+    }
+
+    // return the function
+    Ok(func)
+}
+
+// TODO: Find a nicer name for this
+fn anon_fn_sugar(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let body = exprs[0].clone();
+    let f = Arc::new(move |args: Vector<Expr>, sym: &SymbolTable| {
+        let sym_args: Vec<_> = (1..args.len() + 1)
+            .map(|i| format!("${}", i).into())
+            .collect();
+        let new_sym = sym.with_locals(&sym_args, None, args);
+        body.eval(&new_sym)
+    });
+    let f = Function::new("AnonFn".into(), 0, f, true);
+    Ok(Expr::Function(f))
+}
 
 // Dict
 
