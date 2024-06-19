@@ -1119,5 +1119,75 @@ fn random_bool(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<E
     Ok(Expr::Bool(b))
 }
 
-use std::iter::repeat;
+fn random_int(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let lower = exprs[0].get_num()?;
+    let lower = lower
+        .to_usize()
+        .ok_or_else(|| anyhow!("Failed to convert {} to a usize!", &lower))?;
+    let upper = exprs[1].get_num()?;
+    let upper = upper
+        .to_usize()
+        .ok_or_else(|| anyhow!("Failed to convert {} to a usize!", &upper))?;
+    let b: usize = rand::random::<usize>() % upper + lower;
+    Ok(Expr::num(b))
+}
 
+fn primes(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let num = exprs[0].get_num()?;
+    let less_than: u32 = num
+        .to_u32()
+        .ok_or_else(|| anyhow!("Could not fit {} into a u32!", num))?;
+    let mut seen = vec![2];
+    for n in (3..less_than).step_by(2) {
+        if !seen.iter().any(|e| n % e == 0) {
+            seen.push(n);
+        }
+    }
+    Ok(Expr::List(seen.iter().map(|&i| Expr::num(i)).collect()))
+}
+
+fn divisors(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let num = exprs[0].get_int()?;
+    let mut res = Vector::new();
+    for i in 1..=num {
+        if num % i == 0 {
+            res.push_back(Expr::Integer(i));
+            if i >= num / 2 {
+                break;
+            }
+        }
+    }
+    res.push_back(Expr::Integer(num));
+    Ok(Expr::Tuple(res))
+}
+
+fn clrf(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 0);
+    Ok(Expr::string("\r\n".to_string()))
+}
+
+fn timestamp(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let curr_time = chrono::Local::now();
+    Ok(Expr::string(
+        curr_time.format(&exprs[0].get_string()?).to_string(),
+    ))
+}
+
+fn name_of(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    if let Expr::Function(f) = &exprs[0] {
+        Ok(Expr::string(f.symbol.to_string()))
+    } else if let Expr::Record(r) = &exprs[0] {
+        Ok(Expr::string(r.type_name()))
+    } else {
+        Ok(Expr::Nil)
+    }
+}
+
+// RECORDS
+
+use std::iter::repeat;
