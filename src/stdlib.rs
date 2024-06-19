@@ -964,5 +964,32 @@ fn tail(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     }
 }
 
+fn zip(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let l_iter = exprs[0].get_list()?;
+    let r_iter = exprs[1].get_list()?;
+    Ok(Expr::List(
+        l_iter
+            .into_iter()
+            .zip(r_iter)
+            .map(|(l, r)| Expr::Tuple(vector![l, r]))
+            .collect(),
+    ))
+}
+
+fn rev(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    // TODO: Any number of args.
+    exact_len!(exprs, 1);
+    if let Ok(list) = exprs[0].get_list() {
+        return Ok(Expr::Tuple(list.into_iter().rev().collect()));
+    }
+    if let Ok(s) = &exprs[0].get_string() {
+        return Ok(Expr::string(s.chars().rev().collect()));
+    }
+    bad_types!("string or list/quote/tuple", exprs[0])
+}
+
+
+
 use std::iter::repeat;
 
