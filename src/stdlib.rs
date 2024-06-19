@@ -874,5 +874,31 @@ fn tuple(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     Ok(Expr::Tuple(exprs))
 }
 
+fn flatten(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let l = exprs[0].get_list()?;
+    let mut res = Vector::new();
+    for item in l {
+        match item {
+            Expr::List(l) | Expr::Tuple(l) | Expr::Quote(l) => {
+                l.into_iter().for_each(|i| res.push_back(i));
+            }
+            otherwise => res.push_back(otherwise),
+        }
+    }
+    Ok(Expr::Tuple(res))
+}
+
+fn chars(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    Ok(Expr::Tuple(
+        exprs[0]
+            .get_string()?
+            .chars()
+            .map(|c| Expr::string(c.into()))
+            .collect(),
+    ))
+}
+
 use std::iter::repeat;
 
