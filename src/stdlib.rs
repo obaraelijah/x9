@@ -20,23 +20,23 @@ use crate::{
 /// and throw a nice error if we don't.
 #[macro_export]
 macro_rules! exact_len {
-    // Single length case
     ($args:expr, $len:literal) => {
         use anyhow::ensure;
-        use crate::ast::ProgramError;
-        ensure!($args.len() == $len, ProgramError::WrongNumberOfArgs($len));
+        use $crate::ast::ProgramError;
+        ensure!($args.len() == $len, ProgramError::WrongNumberOfArgs($len))
     };
-    // Multiple lengths case
-    ($args:expr, $($len:literal),+) => {
+    ($args:expr, $($len:literal),*) => {
         {
-            let expected_lengths = [$($len),+];
-            if !expected_lengths.contains(&$args.len()) {
-                bail!(anyhow!(format!(
-                    "Wrong number of args! Expected number of args to be one of {:?} but received {}",
-                    expected_lengths,
-                    $args.len()
-                )));
-            }
+            let mut is_ok_len = false;
+            $(
+                is_ok_len = is_ok_len || $args.len() == $len;
+            )*
+                if !is_ok_len {
+                    let lengths = [$(
+                        $len,
+                    )*];
+                    bail!(anyhow!(format!("Wrong number of args! Expected number of args to be in {:?} but received {}", lengths, $args.len())));
+                }
         }
     };
 }
