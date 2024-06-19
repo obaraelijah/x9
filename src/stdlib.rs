@@ -1212,6 +1212,5 @@ fn doc_methods(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Ex
     Ok(Expr::List(docs))
 }
 
-
 use std::borrow::Cow;
 use std::iter::repeat;
