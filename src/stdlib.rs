@@ -1212,5 +1212,31 @@ fn doc_methods(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Ex
     Ok(Expr::List(docs))
 }
 
+fn len(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    Ok(Expr::num(exprs[0].len(symbol_table)?))
+}
+
+fn sort(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let mut list = exprs[0].full_order_list()?;
+    list.sort();
+    Ok(Expr::Tuple(list))
+}
+fn distinct(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    if let Ok(_iter) = exprs[0].get_iterator() {
+        return Distinct::lisp_res(exprs, symbol_table);
+    }
+    let sorted = sort(exprs, symbol_table)?.get_list().unwrap();
+    let mut v: Vec<_> = sorted.into_iter().collect();
+    v.dedup();
+    Ok(Expr::List(v.drain(..).collect()))
+}
+
+fn inspect(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    Inspect::lisp_res(exprs, symbol_table)
+}
+
 use std::borrow::Cow;
 use std::iter::repeat;
