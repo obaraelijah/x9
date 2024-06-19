@@ -13,7 +13,7 @@ use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
     interner::InternedString,
-    iterators::{IterType, LazyFilter, LazyList, LazyMap, Skip},
+    iterators::{IterType, LazyFilter, LazyList, LazyMap, NaturalNumbers, Skip, Take, TakeWhile},
 };
 
 /// Macro to check if we have the right number of args,
@@ -989,6 +989,66 @@ fn rev(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     bad_types!("string or list/quote/tuple", exprs[0])
 }
 
+fn range(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    if exprs.is_empty() {
+        return NaturalNumbers::lisp_res(None, None);
+    }
+    // TODO: Always lazy calculate range, or add a new function for it.
+    exact_len!(exprs, 1, 2);
+    let (mut start, end) = if exprs.len() == 1 {
+        use bigdecimal::Zero;
+        (BigDecimal::zero(), exprs[0].get_num()?)
+    } else {
+        (exprs[0].get_num()?, exprs[1].get_num()?)
+    };
+    match (start.to_i64(), end.to_i64()) {
+        // fast path
+        (Some(start), Some(end)) => Ok(Expr::Tuple((start..end).map(Expr::num).collect())),
+        _ => {
+            let mut ret = Vector::new();
+            while start < end {
+                ret.push_back(Expr::num(start.clone()));
+                start += BigDecimal::one();
+            }
+            Ok(Expr::Tuple(ret))
+        }
+    }
+}
+
+fn take(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let num = exprs[0].get_usize()?;
+    if let Ok(list) = exprs[1].get_list() {
+        if num >= list.len() {
+            return Ok(Expr::List(list));
+        }
+        let mut list = list;
+        list.split_off(num);
+        return Ok(Expr::List(list));
+    }
+    let iter = exprs[1].get_iterator()?;
+    Take::lisp_res(num, iter)
+}
+
+fn take_while(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let pred = exprs[0].get_function()?;
+    if let Ok(list) = exprs[1].get_list() {
+        let mut new_list = Vector::new();
+        for value in list.into_iter() {
+            if !pred
+                .call_fn(Vector::unit(value.clone()), symbol_table)?
+                .is_truthy(symbol_table)?
+            {
+                return Ok(Expr::List(new_list));
+            }
+            new_list.push_back(value);
+        }
+        return Ok(Expr::List(new_list));
+    }
+    let iter = exprs[1].get_iterator()?;
+    TakeWhile::lisp_res(pred.clone(), iter)
+}
 
 
 use std::iter::repeat;
