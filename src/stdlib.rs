@@ -1050,6 +1050,78 @@ fn take_while(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Exp
     TakeWhile::lisp_res(pred.clone(), iter)
 }
 
+fn find(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let pred = exprs[0].get_function()?;
+    let iter = exprs[1].get_iterator()?; // todo handle other iterable types
+    while let Some(item) = iter.next(symbol_table) {
+        let item = item?;
+        if pred
+            .call_fn(Vector::unit(item.clone()), symbol_table)?
+            .is_truthy(symbol_table)?
+        {
+            return Ok(item);
+        }
+    }
+    Ok(Expr::Nil)
+}
+
+fn slice(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 3);
+    let lower = exprs[0].get_usize()?;
+    let upper = exprs[1].get_usize()?;
+    let mut list = {
+        if let Ok(s) = exprs[2].get_string() {
+            return Ok(Expr::string(s[lower..upper].to_string()));
+        } else {
+            exprs[2].get_list()?
+        }
+    };
+    if lower >= list.len() {
+        return Ok(Expr::Tuple(Vector::new()));
+    }
+    if upper < list.len() {
+        let (left, _) = list.split_at(upper);
+        list = left;
+    }
+    list = list.split_off(lower);
+    Ok(Expr::Tuple(list))
+}
+fn doall(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    use crate::iterators::LazyIter;
+    exprs[0].get_iterator()?.eval(symbol_table)
+}
+
+fn go(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let ff = exprs[0].get_function()?.clone();
+    let sym_clone = symbol_table.clone();
+    let join_handle = std::thread::spawn(move || ff.call_fn(vector![], &sym_clone));
+    symbol_table.add_join_handle(join_handle);
+    Ok(Expr::Nil)
+}
+
+fn chan(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 0);
+    let (write, read) = crate::records::make_chan();
+    Ok(Expr::Tuple(vector![write, read]))
+}
+
+fn shuffle(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let mut list: Vec<_> = exprs[0].get_list()?.iter().cloned().collect();
+    use rand::seq::SliceRandom;
+    use rand::thread_rng;
+    list.shuffle(&mut thread_rng());
+    Ok(Expr::Tuple(list.into()))
+}
+
+fn random_bool(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 0);
+    let b: bool = rand::random();
+    Ok(Expr::Bool(b))
+}
 
 use std::iter::repeat;
 
