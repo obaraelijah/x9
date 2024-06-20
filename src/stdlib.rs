@@ -1271,5 +1271,29 @@ fn catch_err(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr
     Ok(ret)
 }
 
+fn assert_eq(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2, 3);
+    let l = &exprs[0].eval(symbol_table)?;
+    let r = &exprs[1].eval(symbol_table)?;
+    let msg = match exprs.get(2) {
+        Some(e) => e.get_string()?,
+        None => String::new(),
+    };
+
+    if l != r {
+        Err(anyhow!(
+            "{}Left does not equal Right -- {} != {}\n\nHelp:\n\nLeft evaluated to: {}\nRight evaluated to: {}",
+            msg,
+            &exprs[0],
+            &exprs[1],
+            l,
+            r
+        ))
+    } else {
+        Ok(Expr::Nil)
+    }
+}
+
+
 use std::borrow::Cow;
 use std::iter::repeat;
