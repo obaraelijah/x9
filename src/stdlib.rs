@@ -13,7 +13,7 @@ use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
     interner::InternedString,
-    iterators::{IterType, LazyFilter, LazyList, LazyMap, NaturalNumbers, Skip, Take, TakeWhile},
+    iterators::{IterType, LazyFilter, LazyList, LazyMap, NaturalNumbers, Skip, Take, TakeWhile, Distinct, Inspect},
 };
 
 /// Macro to check if we have the right number of args,
