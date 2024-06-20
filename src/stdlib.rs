@@ -13,7 +13,10 @@ use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
     interner::InternedString,
-    iterators::{IterType, LazyFilter, LazyList, LazyMap, NaturalNumbers, Skip, Take, TakeWhile, Distinct, Inspect},
+    iterators::{
+        Distinct, Inspect, IterType, LazyFilter, LazyList, LazyMap, NaturalNumbers, Skip, Take,
+        TakeWhile,
+    },
 };
 
 /// Macro to check if we have the right number of args,
@@ -1293,7 +1296,6 @@ fn assert_eq(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr
         Ok(Expr::Nil)
     }
 }
-
 
 use std::borrow::Cow;
 use std::iter::repeat;
