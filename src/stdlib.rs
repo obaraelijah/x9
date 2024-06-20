@@ -1238,5 +1238,38 @@ fn inspect(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> 
     Inspect::lisp_res(exprs, symbol_table)
 }
 
+fn max_by(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2); // TODO: Allow init arg
+    let max_by_fn = exprs[0].get_function()?;
+    let collection = &exprs[1].get_iterator()?;
+
+    let mut curr_max = match collection.next(symbol_table) {
+        Some(res) => res?,
+        None => bail!("max-by called on an empty collection!"),
+    };
+
+    let mut curr_max_f = max_by_fn.call_fn(Vector::unit(curr_max.clone()), symbol_table)?;
+
+    while let Some(item) = collection.next(symbol_table) {
+        let item = item?;
+        let item_f = max_by_fn.call_fn(Vector::unit(item.clone()), symbol_table)?;
+        if item_f > curr_max_f {
+            curr_max = item;
+            curr_max_f = item_f;
+        }
+    }
+
+    Ok(curr_max)
+}
+
+fn catch_err(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let ret = match exprs[0].eval(symbol_table) {
+        Ok(_) => Expr::Nil,
+        Err(e) => Expr::string(format!("{}, with root cause:\n{}", e, e.root_cause())),
+    };
+    Ok(ret)
+}
+
 use std::borrow::Cow;
 use std::iter::repeat;
