@@ -10,13 +10,10 @@ use im::{vector, Vector};
 use itertools::Itertools;
 
 use crate::{
-    ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
-    bad_types,
-    interner::InternedString,
-    iterators::{
+    ast::{Expr, Function, LispResult, ProgramError, SymbolTable}, bad_types, cli::Options, interner::InternedString, iterators::{
         Distinct, Inspect, IterType, LazyFilter, LazyList, LazyMap, NaturalNumbers, Skip, Take,
         TakeWhile,
-    },
+    }
 };
 
 /// Macro to check if we have the right number of args,
@@ -1299,3 +1296,19 @@ fn assert_eq(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr
 
 use std::borrow::Cow;
 use std::iter::repeat;
+
+/// Create a symbol table without the x9 defined stdlib and
+/// no user passed arguments. Useful for benchmarks.
+pub fn create_stdlib_symbol_table_no_cli() -> SymbolTable {
+    let opt = Options {
+        // We haven't solved the $X9_PATH issue - i.e. where does
+        // the x9 stdlib on the filesystem?
+        do_not_load_native_stdlib: true,
+        ..Default::default()
+    };
+    create_stdlib_symbol_table(&opt)
+}
+
+pub fn create_stdlib_symbol_table(opts: &Options) -> SymbolTable {
+    todo!()
+}
