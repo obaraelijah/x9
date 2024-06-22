@@ -167,6 +167,25 @@ fn dec_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Exp
     Ok(res)
 }
 
+fn sqrt_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 1);
+    let num_f64 = match &exprs[0] {
+        Expr::Integer(i) => *i as f64,
+        Expr::Num(i) => {
+            if let Some(f) = i.to_f64() {
+                f
+            } else {
+                return i
+                    .sqrt()
+                    .map(Expr::num)
+                    .ok_or_else(|| anyhow!("Cannot square root a negative number!"));
+            }
+        }
+        otherwise => return bad_types!("num or int", otherwise),
+    };
+    Ok(Expr::num(BigDecimal::from_f64(num_f64.sqrt()).unwrap()))
+}
+
 fn pow(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     exact_len!(exprs, 2);
     let base = exprs[0].get_num()?;
