@@ -10,10 +10,14 @@ use im::{vector, Vector};
 use itertools::Itertools;
 
 use crate::{
-    ast::{Expr, Function, LispResult, ProgramError, SymbolTable}, bad_types, cli::Options, interner::InternedString, iterators::{
+    ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
+    bad_types,
+    cli::Options,
+    interner::InternedString,
+    iterators::{
         Distinct, Inspect, IterType, LazyFilter, LazyList, LazyMap, NaturalNumbers, Skip, Take,
         TakeWhile,
-    }
+    },
 };
 
 /// Macro to check if we have the right number of args,
