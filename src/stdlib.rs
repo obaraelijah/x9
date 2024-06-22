@@ -186,6 +186,32 @@ fn sqrt_exprs(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Ex
     Ok(Expr::num(BigDecimal::from_f64(num_f64.sqrt()).unwrap()))
 }
 
+fn nth_root(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 2);
+    let root = exprs[0]
+        .get_num()?
+        .to_f64()
+        .ok_or_else(|| anyhow!("Failed to convert root to floating point"))?;
+    if root <= 0.0 {
+        bail!("{root} must be non-negative to nth_root!");
+    }
+    let num = exprs[1]
+        .get_num()?
+        .to_f64()
+        .ok_or_else(|| anyhow!("Failed to convert num to floating point"))?;
+    // TODO: Try out newton's method here (and find a good way of making guesses)
+
+    // TODO: What if this fails? (sqrt -1, etc)
+    let res = num.powf(1.0 / root);
+    Ok(Expr::num(BigDecimal::from_f64(res).unwrap()))
+}
+
+// copilot coming in clutch :flushed:
+fn print_smiley_face(_exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    println!("( ͡° ͜ʖ ͡°)");
+    Ok(Expr::Nil)
+}
+
 fn pow(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     exact_len!(exprs, 2);
     let base = exprs[0].get_num()?;
