@@ -5,10 +5,12 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure, Context};
-use bigdecimal::{BigDecimal, One, ToPrimitive};
+use bigdecimal::{BigDecimal, One,FromPrimitive, ToPrimitive};
 use im::{vector, Vector};
 use itertools::Itertools;
 
+use crate::modules::load_x9_stdlib;
+use crate::records::{ DictRecord, RecordDoc};
 use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
