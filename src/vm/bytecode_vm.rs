@@ -1,4 +1,6 @@
-use crate::ast::{Expr, SymbolTable};
+use anyhow::anyhow;
+
+use crate::ast::{Expr, LispResult, SymbolTable};
 
 use super::ByteCodeCompiler;
 
@@ -25,4 +27,26 @@ impl ByteCodeVM {
             debug_mode: debugger_flag,
         }
     }
+
+    fn pop(&mut self) -> LispResult<Expr> {
+        self.stack
+            .pop()
+            .ok_or_else(|| anyhow!("Pop called on empty stack!"))
+    }
+
+    fn push(&mut self, value: Expr) {
+        self.stack.push(value)
+    }
+
+    pub fn pretty_print_program(&self) {
+        println!(
+            "--------------------------------------------------------------------------------"
+        );
+        for (idx, instruction) in self.program.iter().enumerate() {
+            println!("{idx:<5}: {instruction:?}");
+        }
+        println!(
+            "--------------------------------------------------------------------------------"
+        );
+    }    
 }
