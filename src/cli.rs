@@ -41,7 +41,8 @@ pub struct Options {
         help = "WIP: Format some incoming x9 on stdin"
     )]
     pub formatter: bool,
-
+    #[structopt(short = "b", long = "bytecompile", help = "WIP: bytecompile")]
+    pub byte_compile: bool,
     #[structopt(short = "d", long = "debugger", help = "WIP: :^)")]
     pub debugger: bool,
 }
@@ -54,6 +55,7 @@ impl Default for Options {
             load_file: false,
             do_not_load_native_stdlib: false,
             formatter: false,
+            byte_compile: false,
             debugger: false,
         }
     }
