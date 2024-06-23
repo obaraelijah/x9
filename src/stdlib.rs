@@ -1395,7 +1395,23 @@ macro_rules! document_records {
     };
 }
 
+macro_rules! document_record {
+    ($sym:expr, $rec:ident) => {
+        $sym.add_doc_item($rec::name().into(), $rec::type_doc().into());
+        for (method, method_doc) in $rec::method_doc() {
+            $sym.add_doc_item(format!("{}.{}", $rec::name(), method), (*method_doc).into());
+        }
+    };
+}
 
+macro_rules! register_record {
+    ($sym:expr, $rec:ident) => {{
+        $sym.add_local(&Expr::Symbol($rec::RECORD_NAME.into()), &$rec::make())
+            .unwrap();
+
+        document_record!($sym, $rec);
+    }};
+}
 
 /// Create a symbol table without the x9 defined stdlib and
 /// no user passed arguments. Useful for benchmarks.
@@ -1410,5 +1426,5 @@ pub fn create_stdlib_symbol_table_no_cli() -> SymbolTable {
 }
 
 pub fn create_stdlib_symbol_table(opts: &Options) -> SymbolTable {
-    todo!()
+   todo!()
 }
