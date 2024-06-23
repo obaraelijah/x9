@@ -12,18 +12,26 @@ pub enum Instruction {
 }
 
 pub struct ByteCodeVM {
+    instp: usize,
+    instp_stack: Vec<usize>,
     compiler: ByteCodeCompiler,
     program: Vec<Instruction>,
     stack: Vec<Expr>,
+    root_symbol_table: SymbolTable,
+    function_scopes: Vec<SymbolTable>,
     debug_mode: bool,
 }
 
 impl ByteCodeVM {
     pub fn new(symbol_table: SymbolTable, debugger_flag: bool) -> Self {
         ByteCodeVM {
+            instp: 0,
+            instp_stack: Vec::new(),
+            stack: Vec::new(),
             compiler: ByteCodeCompiler::new(),
             program: Vec::new(),
-            stack: Vec::new(),
+            root_symbol_table: symbol_table,
+            function_scopes: vec![],
             debug_mode: debugger_flag,
         }
     }
