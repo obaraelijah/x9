@@ -5,12 +5,12 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure, Context};
-use bigdecimal::{BigDecimal, One,FromPrimitive, ToPrimitive};
+use bigdecimal::{BigDecimal, FromPrimitive, One, ToPrimitive};
 use im::{vector, Vector};
 use itertools::Itertools;
 
 use crate::modules::load_x9_stdlib;
-use crate::records::{ DictRecord, RecordDoc};
+use crate::records::{DictRecord, RecordDoc};
 use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
@@ -1426,5 +1426,5 @@ pub fn create_stdlib_symbol_table_no_cli() -> SymbolTable {
 }
 
 pub fn create_stdlib_symbol_table(opts: &Options) -> SymbolTable {
-   todo!()
+    todo!()
 }

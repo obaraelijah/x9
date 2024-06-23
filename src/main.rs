@@ -1,5 +1,5 @@
 use structopt::StructOpt;
-use x9::{cli, formatter, stdlib, modules};
+use x9::{cli, formatter, modules, stdlib};
 
 fn main() -> Result<(), i32> {
     let opt = cli::Options::from_args();

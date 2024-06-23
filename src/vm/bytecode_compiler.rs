@@ -5,13 +5,20 @@ use im::{vector, Vector};
 use itertools::Itertools;
 
 use crate::{
+    ast::{ByteCompiledFunction, Expr, LispResult, ProgramError, Symbol},
     bad_types, exact_len,
     parser::read,
-    ast::{ByteCompiledFunction, Expr, LispResult, ProgramError, Symbol},
 };
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 struct Label(usize);
+
+#[derive(Debug, Clone)]
+enum UnlinkedInstruction {
+    Instruction(Instruction),
+    Test(Label),
+    JumpTo(Label),
+}
 
 pub struct ByteCodeCompiler {
     instructions: Vec<String>,
@@ -53,4 +60,17 @@ impl ByteCodeCompiler {
     fn len(&self) -> usize {
         self.instructions.len()
     }
+}
+
+use super::bytecode_vm::Instruction;
+
+pub fn byte_compile(input: &str) -> LispResult<Vec<Instruction>> {
+    let mut compiler = ByteCodeCompiler::new();
+    for expr in read(input) {
+        let expr = expr?;
+        dbg!(&expr);
+        compiler.compile_expr(expr)?;
+        compiler.print_internals();
+    }
+    Ok(())
 }

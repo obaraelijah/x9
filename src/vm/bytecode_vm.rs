@@ -7,7 +7,7 @@ pub struct ByteCodeVM {
 impl ByteCodeVM {
     pub fn new(symbol_table: SymbolTable, debugger_flag: bool) -> Self {
         ByteCodeVM {
-            debug_mode: debugger_flag
+            debug_mode: debugger_flag,
         }
     }
 }
