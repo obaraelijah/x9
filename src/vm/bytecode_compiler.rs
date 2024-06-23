@@ -64,13 +64,13 @@ impl ByteCodeCompiler {
 
 use super::bytecode_vm::Instruction;
 
-pub fn byte_compile(input: &str) -> LispResult<Vec<Instruction>> {
-    let mut compiler = ByteCodeCompiler::new();
-    for expr in read(input) {
-        let expr = expr?;
-        dbg!(&expr);
-        compiler.compile_expr(expr)?;
-        compiler.print_internals();
-    }
-    Ok(())
-}
+// pub fn byte_compile(input: &str) -> LispResult<Vec<Instruction>> {
+//     let mut compiler = ByteCodeCompiler::new();
+//     for expr in read(input) {
+//         let expr = expr?;
+//         dbg!(&expr);
+//         compiler.compile_expr(expr)?;
+//         compiler.print_internals();
+//     }
+//     Ok(())
+// }
