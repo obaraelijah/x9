@@ -925,6 +925,26 @@ fn tuple(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     Ok(Expr::Tuple(exprs))
 }
 
+fn nth(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let index = exprs[0].get_usize()?;
+    if let Ok(string) = exprs[1].get_string() {
+        Ok(string
+            .chars()
+            .nth(index)
+            .map(|c| Expr::string(c.into()))
+            .unwrap_or(Expr::Nil))
+    } else {
+        let list = exprs[1].get_list()?;
+        list.get(index).cloned().ok_or_else(|| {
+            anyhow::anyhow!(
+                "Failed to nth as list has length {} but attempted to index {}",
+                list.len(),
+                index
+            )
+        })
+    }
+}
+
 fn flatten(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     exact_len!(exprs, 1);
     let l = exprs[0].get_list()?;
@@ -1347,6 +1367,35 @@ fn assert_eq(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr
 
 use std::borrow::Cow;
 use std::iter::repeat;
+
+macro_rules! make_stdlib_fns {
+    ( $(($sym:literal, $minargs:expr, $func:expr, $eval_args:expr, $doc:expr)),* ) => {
+        {
+            let mut globals = Vec::new();
+            let mut docs = Vec::new();
+            $(
+                let f = Function::new($sym.into(), $minargs, Arc::new($func), $eval_args);
+                globals.push(($sym.into(), Expr::function(f)));
+                docs.push(($sym.into(), $doc.into()));
+            )*
+            SymbolTable::with_globals(globals, docs)
+        }
+    };
+}
+
+macro_rules! document_records {
+    ($sym:expr, $($rec:ident),*) => {
+        $(
+            // Document the record itself.
+            $sym.add_doc_item($rec::name().into(), $rec::type_doc().into());
+            for (method, method_doc) in $rec::method_doc() {
+                $sym.add_doc_item(format!("{}.{}", $rec::name(), method), (*method_doc).into());
+            }
+        )*
+    };
+}
+
+
 
 /// Create a symbol table without the x9 defined stdlib and
 /// no user passed arguments. Useful for benchmarks.
