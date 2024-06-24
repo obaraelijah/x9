@@ -14,6 +14,12 @@ pub enum Instruction {
     EnterScope,
     ExitScope,
     LocalScopeBind(Symbol),
+    CallFn(usize),
+    Cons,
+    Head,
+    Tail,
+    BreakPoint,
+    Add(usize),
 }
 
 pub struct ByteCodeVM {
@@ -25,6 +31,11 @@ pub struct ByteCodeVM {
     root_symbol_table: SymbolTable,
     function_scopes: Vec<SymbolTable>,
     debug_mode: bool,
+}
+
+enum ControlFlow {
+    Incr,
+    Jump(usize),
 }
 
 impl ByteCodeVM {
