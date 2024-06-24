@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 
-use crate::ast::{Expr, LispResult, SymbolTable};
+use crate::ast::{Expr, LispResult, Symbol, SymbolTable};
 
 use super::ByteCodeCompiler;
 
@@ -9,6 +9,11 @@ pub enum Instruction {
     Push(Expr),
     Test(usize),
     Jump(usize),
+    Fail(&'static str),
+    GlobalBind(Symbol),
+    EnterScope,
+    ExitScope,
+    LocalScopeBind(Symbol),
 }
 
 pub struct ByteCodeVM {
@@ -56,5 +61,16 @@ impl ByteCodeVM {
         println!(
             "--------------------------------------------------------------------------------"
         );
+    }
+
+    pub fn run(&mut self, input: &str) -> LispResult<Expr> {
+        todo!()
+    }
+
+    fn symbol_table(&self) -> &SymbolTable {
+        match self.function_scopes.last() {
+            Some(sym) => sym,
+            None => &self.root_symbol_table,
+        }
     }
 }
