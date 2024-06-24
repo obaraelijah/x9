@@ -1,3 +1,8 @@
+(defn is-even?
+  "Test if the given item is even."
+  (x)
+  (= 0 (% x 2)))
+
 (defn nil? (x)
   (= x nil))
 
