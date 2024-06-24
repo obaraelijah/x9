@@ -73,4 +73,21 @@ impl ByteCodeVM {
             None => &self.root_symbol_table,
         }
     }
+
+    fn add_function_scope(&mut self) {
+        let new_sym = self.symbol_table().clone();
+        self.function_scopes.push(new_sym)
+    }
+
+    fn remove_function_scope(&mut self) -> LispResult<()> {
+        if self.function_scopes.pop().is_none() {
+            Err(anyhow!("No function scope to pop! {}", self.instp))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn record_instp(&mut self) {
+        self.instp_stack.push(self.instp);
+    }
 }
