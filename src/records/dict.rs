@@ -7,6 +7,7 @@ use crate::ast::{Expr, LispResult, SymbolTable};
 
 use super::RecordDoc;
 
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct DictRecord(HashMap<Expr, Expr>);
 
 impl DictRecord {
@@ -102,10 +103,33 @@ impl RecordDoc for DictRecord {
     }
 
     fn type_doc() -> &'static str {
-        "Immutable dictionary."
+        "Immutable dictionary.
+Example:
+(dict \"a\" 1 \"b\" 2) ;
+"
     }
 
     fn method_doc() -> &'static [(&'static str, &'static str)] {
         &[]
+    }
+}
+
+pub(crate) struct DictMutRecord;
+
+impl DictMutRecord {
+    pub(crate) const RECORD_NAME: &'static str = "DictMut";
+}
+
+impl RecordDoc for DictMutRecord {
+    fn name() -> &'static str {
+        DictMutRecord::RECORD_NAME
+    }
+
+    fn type_doc() -> &'static str {
+        "Mutable dictionary type"
+    }
+
+    fn method_doc() -> &'static [(&'static str, &'static str)] {
+        &[("Docs", "TBD")]
     }
 }
