@@ -90,4 +90,12 @@ impl ByteCodeVM {
     fn record_instp(&mut self) {
         self.instp_stack.push(self.instp);
     }
+
+    fn restore_instp(&mut self) -> LispResult<()> {
+        self.instp = self
+            .instp_stack
+            .pop()
+            .ok_or_else(|| anyhow!("No instp to restore!"))?;
+        Ok(())
+    }
 }
