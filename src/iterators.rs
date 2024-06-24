@@ -1,10 +1,10 @@
 #![allow(clippy::unnecessary_wraps)]
 use crate::ast::{Expr, Function, LispResult, SymbolTable};
-use std::collections::HashSet;
-use std::{hash::Hash, ops::Deref};
 use im::Vector;
 use parking_lot::Mutex;
 use rand::random;
+use std::collections::HashSet;
+use std::{hash::Hash, ops::Deref};
 
 pub type IterType = Box<dyn LazyIter>;
 
