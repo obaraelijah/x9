@@ -33,7 +33,7 @@ impl PartialEq for FileRecord {
 impl FileRecord {
     pub(crate) const RECORD_NAME: &'static str = "FileRecord";
 
-    pub(crate) fn from_x7(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    pub(crate) fn from_x9(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
         symbol_table
             .lookup(&Self::RECORD_NAME.into())?
             .call_fn(exprs, symbol_table)
