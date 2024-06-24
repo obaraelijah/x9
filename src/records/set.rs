@@ -51,7 +51,7 @@ impl RecordDoc for SetRecord {
     }
 
     fn type_doc() -> &'static str {
-        "Basic Hash Set in x7."
+        "Basic Hash Set in x9."
     }
 
     fn method_doc() -> &'static [(&'static str, &'static str)] {
