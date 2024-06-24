@@ -12,6 +12,10 @@ fn parse_benchmark(c: &mut Criterion) {
     });
 }
 
+fn eval_benchmark(c: &mut Criterion) {
+    todo!()
+}
+
 criterion_group!(name = benches;
                  config = Criterion::default().sample_size(75);
                  targets = parse_benchmark);
