@@ -59,7 +59,7 @@ impl LazyIter for IterType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct LazyMap {
     inner: IterType,
     f: Function,
@@ -87,11 +87,11 @@ impl LazyIter for LazyMap {
 }
 
 // TODO: Figure out this i.e Expurnge it
-impl std::fmt::Display for LazyMap {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.inner)
-    }
-}
+// impl std::fmt::Display for LazyMap {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{:?}", self.inner)
+//     }
+// }
 
 impl LazyMap {
     pub(crate) fn lisp_res(inner: IterType, f: Function) -> LispResult<Expr> {
@@ -103,7 +103,7 @@ impl LazyMap {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct LazyFilter {
     inner: IterType,
     f: Function,
@@ -145,11 +145,11 @@ impl LazyIter for LazyFilter {
 }
 
 // TODO: Figure out this i.e Expurnge it
-impl std::fmt::Display for LazyFilter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.inner)
-    }
-}
+// impl std::fmt::Display for LazyFilter {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{:?}", self.inner)
+//     }
+// }
 
 impl LazyFilter {
     pub(crate) fn lisp_res(inner: IterType, f: Function) -> LispResult<Expr> {
@@ -197,7 +197,7 @@ impl std::fmt::Display for Counter {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct NaturalNumbers {
     counter: Counter,
     end: Option<usize>,
@@ -214,11 +214,11 @@ impl NaturalNumbers {
     }
 }
 
-impl std::fmt::Display for NaturalNumbers {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.counter)
-    }
-}
+// impl std::fmt::Display for NaturalNumbers {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{:?}", self.counter)
+//     }
+// }
 
 impl LazyIter for NaturalNumbers {
     fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
@@ -426,7 +426,7 @@ impl LazyIter for TakeWhile {
 // }s
 
 // TODO: Expunge it
-#[derive(Debug)]
+// #[derive(Debug)]
 pub(crate) struct Take {
     inner: IterType,
     amount: AtomicUsize,
@@ -454,11 +454,11 @@ impl Clone for Take {
 }
 
 // TODO: Expunge it
-impl std::fmt::Display for Take {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Take<{}, {}>", self.inner, self.id,)
-    }
-}
+// impl std::fmt::Display for Take {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "Take<{}, {}>", self.inner, self.id,)
+//     }
+// }
 
 impl LazyIter for Take {
     fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
@@ -739,3 +739,41 @@ impl LazyIter for CartesianProduct {
         random()
     }
 }
+
+macro_rules! impl_dbg_inner {
+    ($($t:ident),*) => {
+        $(
+            impl std::fmt::Debug for $t {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}<{}>", self.name(), self.inner)
+                }
+            }
+            impl std::fmt::Display for $t {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}<{}>", self.name(), self.inner)
+                }
+            }
+
+        )*
+    };
+}
+
+macro_rules! impl_dbg {
+    ($($t:ident),*) => {
+        $(
+            impl std::fmt::Debug for $t {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "LazyIter<{}>", self.name())
+                }
+            }
+            impl std::fmt::Display for $t {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "LazyIter<{}>", self.name())
+                }
+            }
+        )*
+    };
+}
+
+impl_dbg_inner!(LazyMap, LazyFilter, Take);
+impl_dbg!(NaturalNumbers);
