@@ -99,3 +99,30 @@ impl ByteCodeVM {
         Ok(())
     }
 }
+
+(+ 1 2)
+push_arg 1
+push_arg 2
+CallFn +
+
+(defn foobar (x y) (* x y))
+push_deref x
+push_deref y
+CallFn *
+
+(defn ident (x) (x))
+(defn foobar (x y) (* (ident x) y))
+(foobar 3 4)
+-- ident
+push_deref x
+-- foobar
+push_deref x
+CallFn ident
+push_deref y
+CallFn *
+
+(defn if-gate (x) (if x 1 2))
+0 push x
+1 test 3
+2 push 1
+3 push 2
