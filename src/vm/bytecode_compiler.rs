@@ -60,6 +60,11 @@ impl ByteCodeCompiler {
     fn len(&self) -> usize {
         self.instructions.len()
     }
+
+    pub fn compile(
+        &mut self, input: &str,) -> LispResult<()> {
+        todo!()
+    }
 }
 
 use super::bytecode_vm::Instruction;
