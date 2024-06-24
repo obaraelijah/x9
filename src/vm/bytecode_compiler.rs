@@ -78,8 +78,7 @@ impl ByteCodeCompiler {
         self.instructions.len()
     }
 
-    pub fn compile(
-        &mut self, input: &str,) -> LispResult<()> {
+    pub fn compile(&mut self, input: &str) -> LispResult<()> {
         todo!()
     }
 }
