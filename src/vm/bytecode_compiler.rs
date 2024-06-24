@@ -21,7 +21,7 @@ enum UnlinkedInstruction {
 }
 
 pub struct ByteCodeCompiler {
-    instructions: Vec<String>,
+    instructions: Vec<UnlinkedInstruction>,
     named_functions: Vec<(ByteCompiledFunction, Option<String>)>,
     label_map: HashMap<Label, usize>,
     label_count: usize,
@@ -55,6 +55,23 @@ impl ByteCodeCompiler {
         }
         self.label_map.insert(label, self.len());
         Ok(())
+    }
+
+    fn push_jmp(&mut self, label: Label) {
+        self.instructions.push(UnlinkedInstruction::JumpTo(label))
+    }
+
+    fn push_test(&mut self, label: Label) {
+        self.instructions.push(UnlinkedInstruction::Test(label))
+    }
+
+    fn push_nil(&mut self) {
+        self.push_instruction(Instruction::Push(Expr::Nil));
+    }
+
+    fn push_instruction(&mut self, inst: Instruction) {
+        self.instructions
+            .push(UnlinkedInstruction::Instruction(inst))
     }
 
     fn len(&self) -> usize {
