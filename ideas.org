@@ -1,0 +1,71 @@
+* Ideas
+
+** TODO Add channels and a =go= function
+
+** TODO Allow truthiness override for Records
+
+** TODO Finish up StructRecord conversion; deprecate stdlib =dict=
+
+** TODO Fix a stack overflow in this function:
+
+#+begin_src x9
+ (defn factorial (& coll)
+  (cond
+    coll (* (head coll) (factorial (tail coll)))
+    true 1))
+#+end_src
+
+#+begin_example
+➜  x9 git:(truthy-values) ✗ cargo run -- -e foo.x9
+    Finished dev [unoptimized + debuginfo] target(s) in 0.03s
+     Running `target/debug/x9 -e foo.x9`
+>>> (factorial 1 2 3)
+
+thread 'main' has overflowed its stack
+fatal runtime error: stack overflow
+[1]    7980 abort (core dumped)  cargo run -- -e foo.x7
+#+end_example
+
+** TODO Add tail call optimization
+
+** TODO Add git hook which runs the stdlib test suite
+
+** TODO Use a generic pattern struct for all binding contexts
+
+Something like =Pattern= so it works with def, functions, etc:
+
+#+begin_example
+(def (a b) '(1 2))
+#+end_example
+
+** TODO Fix resource leak around everything
+
+See the =coroutines= example.
+
+** TODO Remove default bound in StructRecord
+
+** TODO Add a byte code compiler and interpreter
+
+** TODO Completely rewrite the parser
+
+** TODO Add an http server [1/1]
+
+*** TODO Add a tcp socket server
+
+** TODO Extend the http server
+
+*** TODO Use a record to represent requests
+
+** TODO Add a "help" function
+
+** TODO Fix bug when comparing tuples
+
+The following is incorrect
+#+begin_src x9
+>>> (defn foo (a b) (= ^(a b) ^(ROCK ROCK)))
+Fn<foo, 2, [ a b ]>
+>>> (foo ROCK ROCK)
+false
+#+end_src
+
+** TODO Make this work - =(def  ͡° ͜ʖ ͡° 3)=
