@@ -1,10 +1,17 @@
-use std::{error::Error, path::Path};
+use std::{error::Error, path::Path, sync::Arc};
 
 use anyhow::anyhow;
 use bigdecimal::ToPrimitive;
+use im::Vector;
 
-use crate::ast::{Expr, SymbolTable};
+use crate::ast::{Expr, Function, SymbolTable};
 
+/// ForeignData is a trait that allows x9 to reason about
+/// foreign data types by mapping Self to x9's Expr
+/// and vice-versa.
+///
+/// As the mapping may not be 1:1, all conversions are fallible
+/// result types.
 pub trait ForeignData
 where
     Self: Sized,
@@ -50,6 +57,8 @@ impl std::fmt::Display for ErrorBridge {
 ///
 /// let interpreter = X9Interpreter::new();
 /// ```
+///  Thread Safety Note:
+/// 
 #[derive(Clone)]
 pub struct X9Interpreter {
     symbol_table: SymbolTable,
@@ -70,18 +79,53 @@ impl Drop for X9Interpreter {
 impl X9Interpreter {
     /// Make a new interpreter instance.
     pub fn new() -> Self {
-        todo!()
+        X9Interpreter { 
+            symbol_table: crate::stdlib::create_stdlib_symbol_table_no_cli(),
+        }
     }
 
     /// Recursively load a provided standard library directory.
     pub fn load_lib_dir<P: AsRef<Path>>(&self, lib_path: P) -> Result<(), Box<dyn Error>> {
         crate::modules::recursively_load_dir(false, lib_path, &self.symbol_table)
     }
+
+    /// Add a foreign function to this x9 interpreter instance.
+    /// # Example:
+    ///
+    /// ```rust
+    /// use x9::ffi::{ExprHelper, ForeignData, X9Interpreter};
+    /// use std::sync::Arc;
+    ///
+    /// let interpreter = X9Interpreter::new();
+    /// let my_sum_fn = |args: Vec<u64>| Ok(args.iter().sum());
+    /// // Add the my-sum to interpreter
+    /// interpreter.add_function_ptr("my-sum", 1, Arc::new(my_sum_fn));
+    ///
+    /// // And verify we get u64 with value 6 out of it.
+    /// assert_eq!(interpreter.run_program::<u64>("(my-sum 1 2 3)").unwrap(), 6);
+    /// ```
+    ///
+    pub fn add_function_ptr<T: 'static + ForeignData>(
+        &self,
+        function_symbol: &str,
+        minimum_args: usize,
+        f: Arc<dyn Fn(Vec<T>) -> Result<T, Box<dyn Error + Send>> + Sync + Send>,
+    ) {
+        let x9_fn = move |args: Vector<Expr>, _sym: &SymbolTable| {
+            let args: Result<Vec<_>, _> = args.iter().map(|item| T::from_x9(item)).collect();
+            args.and_then(|args| (f)(args).and_then(|e| e.to_x9()))
+                .map_err(|e| anyhow!("{:?}", e))
+        };
+        let x9_fn = Arc::new(x9_fn);
+
+        let f = Function::new(function_symbol.into(), minimum_args, x9_fn, true);
+        self.symbol_table.add_symbol(function_symbol.into(), Expr::function(f))
+    }
 }
 
 /// Trait to help convert x9's Expr to primitive types.
 /// 
-/// Conversions are always fallible as you can call
+/// Conversions are always fallible as you can callf
 /// it on a wrong variant, or the primitive conversion
 /// may not be possible (e.g. Expr::Num(2^100).to_u64())
 pub trait ExprHelper {
