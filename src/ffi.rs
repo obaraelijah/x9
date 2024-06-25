@@ -1,5 +1,8 @@
 use std::{error::Error, path::Path};
 
+use anyhow::anyhow;
+use bigdecimal::ToPrimitive;
+
 use crate::ast::{Expr, SymbolTable};
 
 pub trait ForeignData
@@ -77,8 +80,59 @@ impl X9Interpreter {
 }
 
 /// Trait to help convert x9's Expr to primitive types.
+/// 
+/// Conversions are always fallible as you can call
+/// it on a wrong variant, or the primitive conversion
+/// may not be possible (e.g. Expr::Num(2^100).to_u64())
 pub trait ExprHelper {
-    fn to_i64(&self) -> Result<u64, Box<dyn Error + Send>>;
+    fn to_u64(&self) -> Result<u64, Box<dyn Error + Send>>;
+    fn to_i64(&self) -> Result<i64, Box<dyn Error + Send>>;
+    fn to_usize(&self) -> Result<usize, Box<dyn Error + Send>>;
+    fn to_f64(&self) -> Result<f64, Box<dyn Error + Send>>;
+    fn to_f32(&self) -> Result<f32, Box<dyn Error + Send>>;
+
+    fn to_string(&self) -> Result<String, Box<dyn Error + Send>>;
+}
+
+impl ExprHelper for Expr {
+    fn to_u64(&self) -> Result<u64, Box<dyn Error + Send>> {
+        self.get_num().map_err(ErrorBridge::new).and_then(|n| {
+            ToPrimitive::to_u64(&n)
+                .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+        })
+    }
+
+    fn to_i64(&self) -> Result<i64, Box<dyn Error + Send>> {
+        self.get_num().map_err(ErrorBridge::new).and_then(|n| {
+            ToPrimitive::to_i64(&n)
+                .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+        })
+    }
+
+    fn to_usize(&self) -> Result<usize, Box<dyn Error + Send>> {
+        self.get_num().map_err(ErrorBridge::new).and_then(|n| {
+            ToPrimitive::to_usize(&n)
+                .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+        })
+    }
+
+    fn to_f64(&self) -> Result<f64, Box<dyn Error + Send>> {
+        self.get_num().map_err(ErrorBridge::new).and_then(|n| {
+            ToPrimitive::to_f64(&n)
+                .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+        })
+    }
+
+    fn to_f32(&self) -> Result<f32, Box<dyn Error + Send>> {
+        self.get_num().map_err(ErrorBridge::new).and_then(|n| {
+            ToPrimitive::to_f32(&n)
+                .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+        })
+    }
+
+    fn to_string(&self) -> Result<String, Box<dyn Error + Send>> {
+        self.get_string().map_err(ErrorBridge::new)
+    }
 }
 
 #[macro_export]
