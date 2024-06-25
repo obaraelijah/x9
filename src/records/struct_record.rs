@@ -3,6 +3,7 @@ use im::Vector;
 use itertools::Itertools;
 use parking_lot::Mutex;
 use std::{collections::HashMap, sync::Arc};
+use std::marker::PhantomData;
 
 use crate::{
     ast::{Expr, LispResult, SymbolTable},
@@ -276,6 +277,7 @@ impl<T: 'static + PartialEq + Sync + Send> Record for StructRecord<T> {
     }
 }
 
+// Massive set of trait impls
 // TODO: Use a macro for this
 pub(crate) trait IntoReadFn<Args, T, Out> {
     fn into_read_fn(self) -> ReadFn<T>;
@@ -285,7 +287,9 @@ pub(crate) trait IntoWriteFn<Args, T, Out> {
     fn into_write_fn(self) -> WriteFn<T>;
 }
 
-// Massive set of trait impls
+// Struct to prevent trait impl issues for Self: ForeignData
+pub(crate) struct InnerBlocker<T>(PhantomData<T>);
+
 // IntoReadFn: Zero args
 
 impl<F, T, Out> IntoReadFn<(), T, Out> for F
