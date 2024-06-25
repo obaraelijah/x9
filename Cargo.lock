@@ -1216,6 +1216,7 @@ dependencies = [
  "downcast-rs",
  "im",
  "itertools 0.13.0",
+ "num-traits",
  "once_cell",
  "parking_lot",
  "rand",

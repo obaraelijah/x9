@@ -1,7 +1,7 @@
 use std::{error::Error, path::Path, sync::Arc};
 
 use anyhow::anyhow;
-use bigdecimal::ToPrimitive;
+use num_traits::cast::ToPrimitive;
 use im::Vector;
 
 use crate::ast::{Expr, Function, SymbolTable};
@@ -254,6 +254,61 @@ impl ExprHelper for bigdecimal::BigDecimal {
 
     fn to_string(&self) -> Result<String, Box<dyn Error + Send>> {
         Ok(ToString::to_string(&self))
+    }
+}
+
+impl ForeignData for u64 {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::Num((*self).into()))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        expr.to_u64()
+    }
+}
+
+impl ForeignData for i64 {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::Num((*self).into()))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        expr.to_i64()
+    }
+}
+
+impl ForeignData for u32 {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::Num((*self).into()))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        expr.to_u64().map(|e| e as u32)
+    }
+}
+
+impl ForeignData for f32 {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        // use num_traits::FromPrimitive;
+        let n = num_traits::FromPrimitive::from_f32(*self)
+            .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {self} to u64")))?;
+        Ok(Expr::Num(n))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        expr.to_f32()
+    }
+}
+
+impl ForeignData for usize {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        let n = num_traits::FromPrimitive::from_usize(*self)
+            .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {self} to u64")))?;
+        Ok(Expr::Num(n))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        expr.to_usize()
     }
 }
 

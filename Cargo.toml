@@ -29,6 +29,7 @@ regex = "1.4.2"
 downcast-rs = "1.2.1"
 walkdir = "2.3.1"
 chrono = "0.4.19"
+num-traits = "0.2.14"
 
 [dev-dependencies]
 criterion = "0.5.1"
