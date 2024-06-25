@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use im::Vector;
 
-use crate::ast::Expr;
+use crate::{records::struct_record::StructRecord, ast::Expr};
 
 use super::RecordDoc;
 
