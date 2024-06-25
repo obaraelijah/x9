@@ -5,7 +5,7 @@ use itertools::Itertools;
 
 use crate::ast::{Expr, LispResult, SymbolTable};
 
-use super::RecordDoc;
+use super::{struct_record::StructRecord, RecordDoc};
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct DictRecord(HashMap<Expr, Expr>);
@@ -95,6 +95,10 @@ impl DictRecord {
     fn update(&mut self, key: Expr, value: Expr) -> Option<Expr> {
         self.0.insert(key, value)
     }
+
+    pub(crate) fn make() -> Expr {
+        todo!()
+    }
 }
 
 impl RecordDoc for DictRecord {
@@ -118,6 +122,10 @@ pub(crate) struct DictMutRecord;
 
 impl DictMutRecord {
     pub(crate) const RECORD_NAME: &'static str = "DictMut";
+
+    pub(crate) fn make() -> Expr {
+        todo!()
+    }
 }
 
 impl RecordDoc for DictMutRecord {
