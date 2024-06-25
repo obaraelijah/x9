@@ -323,6 +323,25 @@ where
     }
 }
 
+// IntoReadFn: One arg
+
+impl<F, T, A, Out> IntoReadFn<(A,), T, Out> for F
+where
+    F: Fn(&T, A) -> Out + Sync + Send + 'static,
+    Out: ForeignData,
+    A: ForeignData,
+{
+    fn into_read_fn(self) -> ReadFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 1);
+            let a = crate::convert_arg!(A, &args[0]);
+            let s = sr.inner.lock();
+            (self)(&s, a).to_x9().map_err(|e| anyhow!("{e:?}"))
+        };
+        Box::new(ff)
+    }
+}
+
 // IntoWriteFn
 
 // IntoWriteFn: Zero args
