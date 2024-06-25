@@ -307,6 +307,22 @@ where
     }
 }
 
+impl<F, T> IntoReadFn<(), T, InnerBlocker<T>> for F
+where
+    F: Fn(&T) -> T + Sync + Send + 'static,
+    T: Default + PartialEq + Sync + Send + 'static,
+{
+    fn into_read_fn(self) -> ReadFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 0);
+            let my_inner = sr.inner.lock();
+            let new_inner = (self)(&my_inner);
+            crate::record!(sr.clone_with_new_inner(new_inner))
+        };
+        Box::new(ff)
+    }
+}
+
 // IntoWriteFn
 
 // IntoWriteFn: Zero args
