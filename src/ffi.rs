@@ -121,6 +121,50 @@ impl X9Interpreter {
         let f = Function::new(function_symbol.into(), minimum_args, x9_fn, true);
         self.symbol_table.add_symbol(function_symbol.into(), Expr::function(f))
     }
+
+     /// Add a foreign function to this x9 interpreter instance.
+    ///
+    /// You'll want to use `.to_x9_fn()` here.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// use x9::ffi::{ExprHelper, ForeignData, X9Interpreter, IntoX9Function};
+    ///
+    /// let interpreter = X9Interpreter::new();
+    /// let my_sum_fn = |a: u64, b: u64| a + b;
+    ///
+    /// // Add the function
+    /// interpreter.add_function("my-sum", my_sum_fn.to_x9_fn());
+    ///
+    /// // Verify the output is correct
+    /// assert_eq!(interpreter.run_program::<u64>("(my-sum 1 2)").unwrap(), 3);
+    /// ```
+    pub fn add_function(
+        &self,
+        function_symbol: &'static str,
+        fn_tuple: (usize, crate::ast::X9FunctionPtr),
+    ) {
+        let (minimum_args, fn_ptr) = fn_tuple;
+        let f = Function::new(function_symbol.into(), minimum_args, fn_ptr, true);
+        self.symbol_table.add_symbol(function_symbol.into(), Expr::function(f));
+    }
+
+    /// Add a foreign function to this x9 interpreter instance, that doesn't
+    /// evaluate it's arguments.
+    ///
+    /// Useful when dynamically generating functions.
+    ///
+    /// You'll want to use `.to_x9_fn()` here.
+    pub fn add_unevaled_function(
+        &self,
+        function_symbol: &'static str,
+        fn_tuple: (usize, crate::ast::X9FunctionPtr),
+    ) {
+        let (minimum_args, fn_ptr) = fn_tuple;
+        let f = Function::new(function_symbol.into(), minimum_args, fn_ptr, false);
+        self.symbol_table.add_symbol(function_symbol.into(), Expr::function(f));
+    }
 }
 
 /// Trait to help convert x9's Expr to primitive types.
