@@ -4,9 +4,10 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Seek, Write},
 };
-
 use anyhow::anyhow;
 use im::Vector;
+
+use super::struct_record::StructRecord;
 
 #[derive(Debug)]
 pub(crate) struct FileRecord {
@@ -154,6 +155,10 @@ impl FileRecord {
 
     fn append_line(&mut self, content: String) -> LispResult<Expr> {
         self.append(format!("\n{}", content))
+    }
+
+    pub(crate) fn make() -> Expr {
+        todo!()
     }
 }
 
