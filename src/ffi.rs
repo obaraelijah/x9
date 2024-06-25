@@ -135,6 +135,37 @@ impl ExprHelper for Expr {
     }
 }
 
+impl ExprHelper for bigdecimal::BigDecimal {
+    fn to_u64(&self) -> Result<u64, Box<dyn Error + Send>> {
+        ToPrimitive::to_u64(self)
+            .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+    }
+
+    fn to_i64(&self) -> Result<i64, Box<dyn Error + Send>> {
+        ToPrimitive::to_i64(self)
+            .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+    }
+
+    fn to_usize(&self) -> Result<usize, Box<dyn Error + Send>> {
+        ToPrimitive::to_usize(self)
+            .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+    }
+
+    fn to_f64(&self) -> Result<f64, Box<dyn Error + Send>> {
+        ToPrimitive::to_f64(self)
+            .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+    }
+
+    fn to_f32(&self) -> Result<f32, Box<dyn Error + Send>> {
+        ToPrimitive::to_f32(self)
+            .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {} to u64", self)))
+    }
+
+    fn to_string(&self) -> Result<String, Box<dyn Error + Send>> {
+        Ok(ToString::to_string(&self))
+    }
+}
+
 #[macro_export]
 macro_rules! convert_arg {
     ($t:ident, $e:expr) => {{
