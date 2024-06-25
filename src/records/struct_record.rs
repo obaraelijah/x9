@@ -375,3 +375,22 @@ where
         Box::new(ff)
     }
 }
+
+// IntoWriteFn: One arg
+
+impl<F, T, A, Out> IntoWriteFn<(A,), T, Out> for F
+where
+    F: Fn(&mut T, A) -> Out + Sync + Send + 'static,
+    Out: ForeignData,
+    A: ForeignData,
+{
+    fn into_write_fn(self) -> WriteFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 1);
+            let a = crate::convert_arg!(A, &args[0]);
+            let mut s = sr.inner.lock();
+            (self)(&mut s, a).to_x9().map_err(|e| anyhow!("{:?}", e))
+        };
+        Box::new(ff)
+    }
+}
