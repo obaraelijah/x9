@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use num_traits::cast::ToPrimitive;
 use im::Vector;
 
-use crate::ast::{Expr, Function, SymbolTable};
+use crate::{ast::{Expr, Function, LispResult, SymbolTable}, records::RecordType};
 
 /// ForeignData is a trait that allows x9 to reason about
 /// foreign data types by mapping Self to x9's Expr
@@ -309,6 +309,95 @@ impl ForeignData for usize {
 
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         expr.to_usize()
+    }
+}
+
+impl ForeignData for () {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::Nil)
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        expr.get_nil().map_err(ErrorBridge::new)
+    }
+}
+
+impl ForeignData for bool {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::Bool(*self))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        match expr {
+            Expr::Bool(b) => Ok(*b),
+            otherwise => Err(Box::new(ErrorBridge(anyhow!("{otherwise:?}")))),
+        }
+    }
+}
+
+impl ForeignData for String {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::string(self.clone()))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        Ok(format!("{expr}"))
+    }
+}
+
+impl ForeignData for Expr {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(self.clone())
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        Ok(expr.clone())
+    }
+}
+
+impl ForeignData for RecordType {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::Record(self.clone()))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        expr.get_record().map_err(ErrorBridge::new)
+    }
+}
+
+impl ForeignData for LispResult<usize> {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        match self {
+            Ok(e) => Ok(Expr::num(*e)),
+            Err(ref e) => Err(ErrorBridge::new(anyhow!("{:?}", e))),
+        }
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        Ok(expr.get_usize())
+    }
+}
+
+impl ForeignData for LispResult<Expr> {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        match self {
+            Ok(e) => Ok(e.clone()),
+            Err(ref e) => Err(ErrorBridge::new(anyhow!("{:?}", e))),
+        }
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        Ok(Ok(expr.clone()))
+    }
+}
+
+impl ForeignData for Vector<Expr> {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::Tuple(self.clone()))
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        expr.get_list().map_err(ErrorBridge::new)
     }
 }
 
