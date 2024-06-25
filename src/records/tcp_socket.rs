@@ -9,7 +9,7 @@ use std::{
     net::TcpStream,
 };
 
-use super::RecordDoc;
+use super::{struct_record::StructRecord, RecordDoc};
 
 pub(crate) struct TcpListenerRecord {
     // TODO: Move these options into their own struct.
@@ -93,6 +93,10 @@ impl TcpListenerRecord {
             "TcpListenerRecord<accept={:?}>",
             self.accept_fn.as_ref().unwrap()
         )
+    }
+
+    pub(crate) fn make() -> Expr {
+       todo!()
     }
 }
 
