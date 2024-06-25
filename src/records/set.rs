@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use im::Vector;
 
-use crate::{records::struct_record::StructRecord, ast::Expr};
+use crate::{ast::Expr, records::struct_record::StructRecord};
 
 use super::RecordDoc;
 
@@ -44,7 +44,7 @@ impl SetRecord {
         SetRecord(self.0.difference(&other.0).cloned().collect())
     }
 
-    pub(crate)  fn make() -> Expr {
+    pub(crate) fn make() -> Expr {
         todo!()
     }
 }

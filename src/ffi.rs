@@ -58,7 +58,7 @@ impl std::fmt::Display for ErrorBridge {
 /// let interpreter = X9Interpreter::new();
 /// ```
 ///  Thread Safety Note:
-/// 
+///
 #[derive(Clone)]
 pub struct X9Interpreter {
     symbol_table: SymbolTable,
@@ -79,7 +79,7 @@ impl Drop for X9Interpreter {
 impl X9Interpreter {
     /// Make a new interpreter instance.
     pub fn new() -> Self {
-        X9Interpreter { 
+        X9Interpreter {
             symbol_table: crate::stdlib::create_stdlib_symbol_table_no_cli(),
         }
     }
@@ -119,10 +119,11 @@ impl X9Interpreter {
         let x9_fn = Arc::new(x9_fn);
 
         let f = Function::new(function_symbol.into(), minimum_args, x9_fn, true);
-        self.symbol_table.add_symbol(function_symbol.into(), Expr::function(f))
+        self.symbol_table
+            .add_symbol(function_symbol.into(), Expr::function(f))
     }
 
-     /// Add a foreign function to this x9 interpreter instance.
+    /// Add a foreign function to this x9 interpreter instance.
     ///
     /// You'll want to use `.to_x9_fn()` here.
     ///
@@ -147,7 +148,8 @@ impl X9Interpreter {
     ) {
         let (minimum_args, fn_ptr) = fn_tuple;
         let f = Function::new(function_symbol.into(), minimum_args, fn_ptr, true);
-        self.symbol_table.add_symbol(function_symbol.into(), Expr::function(f));
+        self.symbol_table
+            .add_symbol(function_symbol.into(), Expr::function(f));
     }
 
     /// Add a foreign function to this x9 interpreter instance, that doesn't
@@ -163,12 +165,13 @@ impl X9Interpreter {
     ) {
         let (minimum_args, fn_ptr) = fn_tuple;
         let f = Function::new(function_symbol.into(), minimum_args, fn_ptr, false);
-        self.symbol_table.add_symbol(function_symbol.into(), Expr::function(f));
+        self.symbol_table
+            .add_symbol(function_symbol.into(), Expr::function(f));
     }
 }
 
 /// Trait to help convert x9's Expr to primitive types.
-/// 
+///
 /// Conversions are always fallible as you can callf
 /// it on a wrong variant, or the primitive conversion
 /// may not be possible (e.g. Expr::Num(2^100).to_u64())

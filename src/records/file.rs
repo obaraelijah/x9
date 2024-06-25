@@ -1,11 +1,11 @@
 use crate::ast::{Expr, LispResult, SymbolTable};
 use crate::records::RecordDoc;
+use anyhow::anyhow;
+use im::Vector;
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Seek, Write},
 };
-use anyhow::anyhow;
-use im::Vector;
 
 use super::struct_record::StructRecord;
 
