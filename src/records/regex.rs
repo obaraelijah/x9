@@ -4,6 +4,8 @@ use regex::Regex;
 use crate::ast::{Expr, LispResult, SymbolTable};
 use crate::records::RecordDoc;
 
+use super::struct_record::StructRecord;
+
 #[derive(Debug, Clone)]
 pub(crate) struct RegexRecord {
     re: Regex,
@@ -58,6 +60,10 @@ impl RegexRecord {
             })
             .collect();
         Ok(Expr::List(captures))
+    }
+
+    pub(crate) fn make() -> Expr {
+        todo!()
     }
 }
 

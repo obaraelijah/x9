@@ -43,6 +43,10 @@ impl SetRecord {
     fn difference(&self, other: &Self) -> Self {
         SetRecord(self.0.difference(&other.0).cloned().collect())
     }
+
+    pub(crate)  fn make() -> Expr {
+        todo!()
+    }
 }
 
 impl RecordDoc for SetRecord {
