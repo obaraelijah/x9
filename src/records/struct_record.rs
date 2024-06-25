@@ -2,8 +2,8 @@ use anyhow::{anyhow, bail};
 use im::Vector;
 use itertools::Itertools;
 use parking_lot::Mutex;
-use std::{collections::HashMap, sync::Arc};
 use std::marker::PhantomData;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     ast::{Expr, LispResult, SymbolTable},
@@ -355,6 +355,22 @@ where
             crate::exact_len!(args, 0);
             let mut s = sr.inner.lock();
             (self)(&mut s).to_x9().map_err(|e| anyhow!("{e:?}"))
+        };
+        Box::new(ff)
+    }
+}
+
+impl<F, T> IntoWriteFn<(), T, InnerBlocker<T>> for F
+where
+    F: Fn(&mut T) -> T + Sync + Send + 'static,
+    T: Default + PartialEq + Sync + Send + 'static,
+{
+    fn into_write_fn(self) -> WriteFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 0);
+            let mut my_inner = sr.inner.lock();
+            let new_inner = (self)(&mut my_inner);
+            crate::record!(sr.clone_with_new_inner(new_inner))
         };
         Box::new(ff)
     }
