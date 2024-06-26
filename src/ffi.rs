@@ -723,9 +723,7 @@ where
             let c = convert_arg!(C, &args[2]);
             let d = convert_arg!(D, &args[3]);
             let e = convert_arg!(E, &args[4]);
-            (self)(a, b, c, d, e)
-                .to_x9()
-                .map_err(|e| anyhow!("{e:?}"))
+            (self)(a, b, c, d, e).to_x9().map_err(|e| anyhow!("{e:?}"))
         };
         (5, Arc::new(f))
     }
