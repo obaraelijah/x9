@@ -565,6 +565,21 @@ impl<T: ForeignData> ForeignData for Option<T> {
     }
 }
 
+pub struct Variadic<T>(Vec<T>);
+
+impl<T> Variadic<T> {
+    /// Consume the Variadic to produce Vec<T>
+    pub fn into_vec(self) -> Vec<T> {
+        self.0
+    }
+}
+
+// We can use some trait magic to make functions easier to do
+
+pub trait IntoX9Function<Args, Out> {
+    fn to_x9_fn(self) -> (usize, crate::ast::X9FunctionPtr);
+}
+
 #[macro_export]
 macro_rules! convert_arg {
     ($t:ident, $e:expr) => {{
@@ -573,4 +588,40 @@ macro_rules! convert_arg {
             Err(e) => return Err(anyhow!("{e:?}")),
         }
     }};
+}
+
+impl<F, A, Out> IntoX9Function<(A,), Out> for F
+where
+    A: ForeignData,
+    Out: ForeignData,
+    F: Fn(A) -> Out + Sync + Send + 'static,
+{
+    fn to_x9_fn(self) -> (usize, crate::ast::X9FunctionPtr) {
+        let f = move |args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 1);
+            let res = A::from_x9(&args[0]).map(|e| (self)(e));
+            res.and_then(|e| e.to_x9()).map_err(|e| anyhow!("{e:?}"))
+        };
+        (1, Arc::new(f))
+    }   
+}
+
+impl<F, T: ForeignData, Out> IntoX9Function<(Variadic<T>,), Out> for F
+where
+    T: ForeignData,
+    Out: ForeignData,
+    F: Fn(Variadic<T>) -> Out + Sync + Send + 'static,
+{
+    fn to_x9_fn(self) -> (usize, crate::ast::X9FunctionPtr) {
+        let f = move |args: Vector<Expr>, _sym: &SymbolTable| {
+            let args = match args.iter().map(T::from_x9).collect::<Result<Vec<_>, _>>() {
+                Ok(v) => v,
+                Err(e) => return Err(anyhow!("{:?}", e)),
+            };
+            (self)(Variadic(args))
+                .to_x9()
+                .map_err(|e| anyhow!("{:?}", e))
+        };
+        (1, Arc::new(f))
+    }
 }
