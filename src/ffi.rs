@@ -1,11 +1,16 @@
 use std::{collections::HashMap, error::Error, path::Path, sync::Arc};
 
 use anyhow::anyhow;
+use im::Vector;
 use itertools::Itertools;
 use num_traits::cast::ToPrimitive;
-use im::Vector;
 
-use crate::{ast::{Expr, Function, LispResult, SymbolTable}, interner::InternedString, parser::read, records::RecordType};
+use crate::{
+    ast::{Expr, Function, LispResult, SymbolTable},
+    interner::InternedString,
+    parser::read,
+    records::RecordType,
+};
 
 /// ForeignData is a trait that allows x9 to reason about
 /// foreign data types by mapping Self to x9's Expr
@@ -218,7 +223,8 @@ impl X9Interpreter {
             HashMap::new(),
         )?;
 
-        self.symbol_table.add_symbol(interned_fn_name, Expr::function(f));
+        self.symbol_table
+            .add_symbol(interned_fn_name, Expr::function(f));
         Ok(Expr::Nil)
     }
 
@@ -241,7 +247,7 @@ impl X9Interpreter {
     pub fn run_program<T: 'static + ForeignData>(
         &self,
         program: &str,
-    )  -> Result<T, Box<dyn Error + Send>> {
+    ) -> Result<T, Box<dyn Error + Send>> {
         let mut last_expr = Expr::Nil;
         for expr in read(program) {
             last_expr = expr
@@ -522,7 +528,7 @@ impl<T: ForeignData> ForeignData for Vec<T> {
             self.iter()
                 .map(T::to_x9)
                 .collect::<Result<Vector<_>, _>>()?,
-        ))  
+        ))
     }
 
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
@@ -603,7 +609,7 @@ where
             res.and_then(|e| e.to_x9()).map_err(|e| anyhow!("{e:?}"))
         };
         (1, Arc::new(f))
-    }   
+    }
 }
 
 impl<F, T: ForeignData, Out> IntoX9Function<(Variadic<T>,), Out> for F
