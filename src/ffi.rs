@@ -1,10 +1,11 @@
-use std::{error::Error, path::Path, sync::Arc};
+use std::{collections::HashMap, error::Error, path::Path, sync::Arc};
 
 use anyhow::anyhow;
+use itertools::Itertools;
 use num_traits::cast::ToPrimitive;
 use im::Vector;
 
-use crate::{ast::{Expr, Function, LispResult, SymbolTable}, records::RecordType};
+use crate::{ast::{Expr, Function, LispResult, SymbolTable}, interner::InternedString, records::RecordType};
 
 /// ForeignData is a trait that allows x9 to reason about
 /// foreign data types by mapping Self to x9's Expr
@@ -168,6 +169,58 @@ impl X9Interpreter {
         self.symbol_table
             .add_symbol(function_symbol.into(), Expr::function(f));
     }
+
+    /// Manually construct an x9 function, and add it to the interpreter.
+    ///
+    /// #Example
+    ///
+    /// ```rust
+    /// use x9::ffi::{IntoX9Function, Variadic, X9Interpreter};
+    /// use x9::symbols::Expr;
+    ///
+    /// fn embed_foreign_script(interpreter: &X9Interpreter) {
+    ///     // (def-dyn-function my-sum (a b) (+ a b))
+    ///     let interpreter_clone = interpreter.clone();
+    ///     let f = move |args: Variadic<Expr>| {
+    ///         let args = args.into_vec();
+    ///         let fn_name = match args[0].get_symbol_string() {
+    ///             Ok(sym) => sym,
+    ///             Err(e) => return Err(e),
+    ///         };
+    ///         let f_args = args[1].clone(); // (arg1 arg2)
+    ///         let f_body = args[2].clone(); // (redis "set" arg1 arg2)
+    ///         let res = interpreter_clone.add_dynamic_function(fn_name, f_args, f_body);
+    ///         res
+    ///     };
+    ///     interpreter
+    ///         .add_unevaled_function("def-dyn-function", f.to_x9_fn());
+    /// }
+    /// ```
+    pub fn add_dynamic_function<I: Into<InternedString>>(
+        &self,
+        function_sym: I,
+        named_args: Expr,
+        body: Expr,
+    ) -> LispResult<Expr> {
+        let arg_symbols = named_args.get_list()?;
+        let args_len = arg_symbols.len();
+        let interned_fn_name = function_sym.into();
+        let f = Arc::new(move |_args: Vector<Expr>, sym: &SymbolTable| body.eval(sym));
+        let f = Function::new_named_args(
+            interned_fn_name,
+            args_len,
+            f,
+            arg_symbols
+                .into_iter()
+                .map(|e| e.get_symbol_string())
+                .try_collect()?,
+            true,
+            HashMap::new(),
+        )?;
+
+        self.symbol_table.add_symbol(interned_fn_name, Expr::function(f));
+        Ok(Expr::Nil)
+    }    
 }
 
 /// Trait to help convert x9's Expr to primitive types.
