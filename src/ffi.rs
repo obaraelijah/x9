@@ -250,6 +250,37 @@ impl X9Interpreter {
         }
         T::from_x9(&last_expr)
     }
+
+    /// Run a function directly in the interpreter.
+    ///
+    /// This is useful for dynamic functions, where you
+    /// just want to call the foreign function.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use x9::ffi::{ExprHelper, ForeignData, X9Interpreter, IntoX9Function};
+    ///
+    /// let interpreter = X9Interpreter::new();
+    /// // replace "+" with your foreign function
+    /// let res: u64 = interpreter.run_function("+", &[1u64, 2, 3]).unwrap();
+    /// assert_eq!(res, 6);
+    /// ```
+    pub fn run_function<T: ForeignData, Out: ForeignData>(
+        &self,
+        fn_name: &str,
+        fn_args: &[T],
+    ) -> Result<Out, Box<dyn Error + Send>> {
+        let args = fn_args
+            .iter()
+            .map(|e| e.to_x9())
+            .collect::<Result<_, _>>()?;
+        self.symbol_table
+            .lookup(&fn_name.into())
+            .and_then(|f| f.call_fn(args, &self.symbol_table))
+            .map_err(ErrorBridge::new)
+            .and_then(|e| Out::from_x9(&e))
+    }
 }
 
 /// Trait to help convert x9's Expr to primitive types.
