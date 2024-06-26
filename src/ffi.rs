@@ -5,7 +5,7 @@ use itertools::Itertools;
 use num_traits::cast::ToPrimitive;
 use im::Vector;
 
-use crate::{ast::{Expr, Function, LispResult, SymbolTable}, interner::InternedString, records::RecordType};
+use crate::{ast::{Expr, Function, LispResult, SymbolTable}, interner::InternedString, parser::read, records::RecordType};
 
 /// ForeignData is a trait that allows x9 to reason about
 /// foreign data types by mapping Self to x9's Expr
@@ -220,7 +220,36 @@ impl X9Interpreter {
 
         self.symbol_table.add_symbol(interned_fn_name, Expr::function(f));
         Ok(Expr::Nil)
-    }    
+    }
+
+    /// Run an x9 program.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// use x9::ffi::{ExprHelper, ForeignData, X9Interpreter, IntoX9Function};
+    ///
+    /// let interpreter = X9Interpreter::new();
+    /// let my_sum_fn = |args: Vec<u64>| args.iter().sum::<u64>();
+    /// // Add the my-sum to interpreter
+    /// interpreter.add_function("my-sum", my_sum_fn.to_x9_fn());
+    ///
+    /// // And verify we get u64 with value 6 out of it.
+    /// assert_eq!(interpreter.run_program::<u64>("(my-sum '(1 2 3))").unwrap(), 6);
+    /// ```
+    ///
+    pub fn run_program<T: 'static + ForeignData>(
+        &self,
+        program: &str,
+    )  -> Result<T, Box<dyn Error + Send>> {
+        let mut last_expr = Expr::Nil;
+        for expr in read(program) {
+            last_expr = expr
+                .and_then(|expr| expr.eval(&self.symbol_table))
+                .map_err(ErrorBridge::new)?;
+        }
+        T::from_x9(&last_expr)
+    }
 }
 
 /// Trait to help convert x9's Expr to primitive types.
