@@ -631,3 +631,34 @@ where
         (1, Arc::new(f))
     }
 }
+
+// We're working with a function with two arguments,
+// that returns a single output type Out.
+impl<F, A, B, Out> IntoX9Function<(A, B), Out> for F
+where
+    // All inputs and outputs to this function require ForeignData
+    A: ForeignData,
+    B: ForeignData,
+    Out: ForeignData,
+    // X9FunctionPtr requires Sync + Send, so we add that restriction to F
+    F: Fn(A, B) -> Out + Sync + Send + 'static,
+{
+    fn to_x9_fn(self) -> (usize, crate::ast::X9FunctionPtr) {
+        // this closure conforms to the shape X9FunctionPtr requires,
+        // namely a function that takes a Vector<Expr> and a symbol table reference.
+        // args: (+ 1 2) -> vector![Expr::Num(1), Expr::Num(2)]
+        // _sym: A symbol table reference. Unused.
+        let f = move |args: Vector<Expr>, _sym: &SymbolTable| {
+            // exact_len: macro to throw an error if args.len() != 2.
+            crate::exact_len!(args, 2);
+            // convert_arg: Calls A::to_x9(&args[0]) and makes a nice error
+            let a = convert_arg!(A, &args[0]);
+            let b = convert_arg!(B, &args[1]);
+            (self)(a, b) // (self)(a,b) calls the foreign function with args a, b
+                .to_x9() // map the output with Out::to_x9
+                .map_err(|e| anyhow!("{e:?}")) // massage error type to x9's error type (anyhow)
+        };
+        // Finally, return a tuple of minimum args + our function
+        (2, Arc::new(f))
+    }
+}
