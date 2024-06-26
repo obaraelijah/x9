@@ -339,6 +339,8 @@ impl ExprHelper for bigdecimal::BigDecimal {
     }
 }
 
+// This is hubris, but let's do it so the README looks nice.
+
 impl ForeignData for u64 {
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(Expr::Num((*self).into()))
@@ -480,6 +482,55 @@ impl ForeignData for Vector<Expr> {
 
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         expr.get_list().map_err(ErrorBridge::new)
+    }
+}
+
+impl<T: ForeignData> ForeignData for Vec<T> {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        Ok(Expr::Tuple(
+            self.iter()
+                .map(T::to_x9)
+                .collect::<Result<Vector<_>, _>>()?,
+        ))  
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        let res = expr
+            .get_list()
+            .map_err(ErrorBridge::new)?
+            .iter()
+            .map(T::from_x9)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(res)
+    }
+}
+
+impl<T: ForeignData> ForeignData for Result<T, Box<dyn Error + Send>> {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        match self {
+            Ok(t) => t.to_x9(),
+            Err(e) => Err(ErrorBridge::new(anyhow!("{:?}", e))),
+        }
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        Ok(T::from_x9(expr))
+    }
+}
+
+impl<T: ForeignData> ForeignData for Option<T> {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+        match self {
+            Some(item) => item.to_x9(),
+            None => Ok(Expr::Nil),
+        }
+    }
+
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+        match expr {
+            Expr::Nil => Ok(None),
+            otherwise => Ok(Some(T::from_x9(otherwise)?)),
+        }
     }
 }
 
