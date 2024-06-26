@@ -682,3 +682,25 @@ where
         (3, Arc::new(f))
     }
 }
+
+impl<F, A, B, C, D, Out> IntoX9Function<(A, B, C, D), Out> for F
+where
+    A: ForeignData,
+    B: ForeignData,
+    C: ForeignData,
+    D: ForeignData,
+    Out: ForeignData,
+    F: Fn(A, B, C, D) -> Out + Sync + Send + 'static,
+{
+    fn to_x9_fn(self) -> (usize, crate::ast::X9FunctionPtr) {
+        let f = move |args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 4);
+            let a = convert_arg!(A, &args[0]);
+            let b = convert_arg!(B, &args[1]);
+            let c = convert_arg!(C, &args[2]);
+            let d = convert_arg!(D, &args[3]);
+            (self)(a, b, c, d).to_x9().map_err(|e| anyhow!("{e:?}"))
+        };
+        (4, Arc::new(f))
+    }
+}
