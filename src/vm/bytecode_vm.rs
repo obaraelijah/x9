@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 
-use crate::ast::{Expr, LispResult, Symbol, SymbolTable};
+use crate::ast::{ByteCompiledFunction, Expr, LispResult, Symbol, SymbolTable};
 
 use super::ByteCodeCompiler;
 
@@ -20,6 +20,10 @@ pub enum Instruction {
     Tail,
     BreakPoint,
     Add(usize),
+    Ret,
+    Pop,
+    Halt,
+    Map,
 }
 
 pub struct ByteCodeVM {
@@ -85,6 +89,13 @@ impl ByteCodeVM {
         }
     }
 
+    fn symbol_table_mut(&mut self) -> &mut SymbolTable {
+        match self.function_scopes.last_mut() {
+            Some(sym) => sym,
+            None => &mut self.root_symbol_table,
+        }
+    }
+
     fn add_function_scope(&mut self) {
         let new_sym = self.symbol_table().clone();
         self.function_scopes.push(new_sym)
@@ -108,6 +119,22 @@ impl ByteCodeVM {
             .pop()
             .ok_or_else(|| anyhow!("No instp to restore!"))?;
         Ok(())
+    }
+
+    fn get_user_input(&mut self) {
+        todo!()
+    }
+
+    fn call_byte_compiled_fn(&mut self, f: &ByteCompiledFunction) -> LispResult<ControlFlow> {
+        if self.stack.len() < f.minimum_args {
+            return Err(anyhow!(
+                "Expected {} args but could only supply {}",
+                f.minimum_args,
+                self.stack.len()
+            ));
+        }
+        self.record_instp();
+        Ok(ControlFlow::Jump(f.loc))
     }
 
     fn execute(&mut self) -> LispResult<Expr> {
