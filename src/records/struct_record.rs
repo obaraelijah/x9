@@ -348,6 +348,54 @@ where
     }
 }
 
+impl<F, T, A> IntoReadFn<(A,), T, InnerBlocker<LispResult<Self>>> for F
+where
+    F: Fn(&T, A) -> LispResult<T> + Sync + Send + 'static,
+    A: ForeignData,
+    T: Default + PartialEq + Sync + Send + 'static,
+{
+    fn into_read_fn(self) -> ReadFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 1);
+            let a = crate::convert_arg!(A, &args[0]);
+            let s = sr.inner.lock();
+            let new_inner = (self)(&s, a)?;
+            crate::record!(sr.clone_with_new_inner(new_inner))
+        };
+        Box::new(ff)
+    }
+}
+
+// IntoReadFn: Two args
+
+impl<F, T, A, Out> IntoReadFn<(A,), T, InnerBlocker<(T, (Out,))>> for F
+where
+    F: Fn(&T, &T) -> Out + Sync + Send + 'static,
+    Out: ForeignData,
+    A: ForeignData,
+    T: Default + PartialEq + Sync + Send + 'static,
+{
+    fn into_read_fn(self) -> ReadFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 1);
+            let other = args[0].get_record()?;
+            match other.downcast_ref::<StructRecord<T>>() {
+                Some(other_rec) => {
+                    // TODO: Deadlock if same?
+                    let my_inner = sr.inner.lock();
+                    let other_inner = other_rec.inner.lock();
+                    (self)(&my_inner, &other_inner)
+                        .to_x9()
+                        .map_err(|e| anyhow!("{:?}", e))
+                }
+                None => crate::bad_types!(sr as &dyn Record, other), // TODO: Handle this
+            }
+        };
+        Box::new(ff)
+    }
+}
+
+
 // IntoWriteFn
 
 // IntoWriteFn: Zero args
