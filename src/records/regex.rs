@@ -1,7 +1,9 @@
+use anyhow::anyhow;
 use im::Vector;
 use regex::Regex;
 
 use crate::ast::{Expr, LispResult, SymbolTable};
+use crate::exact_len;
 use crate::records::RecordDoc;
 
 use super::struct_record::StructRecord;
@@ -63,7 +65,21 @@ impl RegexRecord {
     }
 
     pub(crate) fn make() -> Expr {
-        todo!()
+        StructRecord::record_builder(RegexRecord::RECORD_NAME)
+            .init_fn(&|v: Vec<Expr>, _| {
+                exact_len!(v, 1);
+                let re_s = v[0].get_string()?;
+                Ok(RegexRecord {
+                    re: Regex::new(&re_s)
+                        .map_err(|e| anyhow!("Failed to compile the regex: {}", e))?,
+                    regex_string: re_s,
+                })
+            })
+            .clone_with(&Clone::clone)
+            .display_with(&|regex: &RegexRecord| format!("Regex<{}>", regex.regex_string))
+            .add_method("is_match", RegexRecord::is_match)
+            .add_method("captures", RegexRecord::captures)
+            .build()
     }
 }
 
