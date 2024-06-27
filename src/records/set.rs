@@ -45,7 +45,17 @@ impl SetRecord {
     }
 
     pub(crate) fn make() -> Expr {
-        todo!()
+        StructRecord::record_builder(SetRecord::RECORD_NAME)
+            .init_fn(&|e: Vec<Expr>, _| Ok(SetRecord(e.into_iter().collect())))
+            .display_with(&SetRecord::display)
+            .clone_with(&Clone::clone)
+            .add_method("contains", SetRecord::contains)
+            .add_method("union", SetRecord::union)
+            .add_method("intersection", SetRecord::intersection)
+            .add_method("difference", SetRecord::difference)
+            .add_method("len", SetRecord::len)
+            .add_method("to_list", SetRecord::to_list)
+            .build()
     }
 }
 
