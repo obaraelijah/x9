@@ -97,7 +97,19 @@ impl DictRecord {
     }
 
     pub(crate) fn make() -> Expr {
-        todo!()
+        StructRecord::record_builder(DictRecord::RECORD_NAME)
+            .init_fn(&DictRecord::init)
+            .clone_with(&Clone::clone) // Just clone it always as we're immutable
+            .display_with(&DictRecord::display)
+            .add_method("keys", DictRecord::keys)
+            .add_method("values", DictRecord::values)
+            .add_method("get", DictRecord::get)
+            .add_method("contains", DictRecord::contains)
+            .add_method("merge", DictRecord::merge)
+            .add_method("set", DictRecord::assoc)
+            .add_method("assoc", DictRecord::assoc)
+            .add_method("remove", DictRecord::remove)
+            .build()
     }
 }
 
@@ -124,7 +136,19 @@ impl DictMutRecord {
     pub(crate) const RECORD_NAME: &'static str = "DictMut";
 
     pub(crate) fn make() -> Expr {
-        todo!()
+        StructRecord::record_builder(DictMutRecord::RECORD_NAME)
+            .init_fn(&DictRecord::init)
+            .display_with(&DictRecord::display)
+            .add_method("keys", DictRecord::keys)
+            .add_method("values", DictRecord::values)
+            .add_method("get", DictRecord::get)
+            .add_method("contains", DictRecord::contains)
+            .add_method("assoc", DictRecord::assoc)
+            .add_method("remove", DictRecord::remove)
+            .add_method_mut("merge", DictRecord::merge_mut)
+            .add_method_mut("update", DictRecord::update)
+            .add_method_mut("update_entry", DictRecord::update_entry)
+            .build()
     }
 }
 
