@@ -1,5 +1,4 @@
 use std::{collections::HashMap, error::Error, path::Path, sync::Arc};
-
 use anyhow::anyhow;
 use im::Vector;
 use itertools::Itertools;
@@ -64,7 +63,20 @@ impl std::fmt::Display for ErrorBridge {
 /// let interpreter = X9Interpreter::new();
 /// ```
 ///  Thread Safety Note:
+/// 
+/// Running several instances of the same interpreter (cloned)
+/// in parallel means that modifications to the symbol table
+/// may not be reflected at the same time in all threads.
 ///
+/// e.g. Running the following programs in parallel:
+///
+/// - (def data-race "owo")
+/// - (println data-race)
+///
+/// Will result in either 'Undefined Symbol: data-race'
+/// or printing "owo" to console.
+///
+/// Async Note: x9 has blocking IO, so you shouldn't run it in async contexts.
 #[derive(Clone)]
 pub struct X9Interpreter {
     symbol_table: SymbolTable,
@@ -111,6 +123,7 @@ impl X9Interpreter {
     /// assert_eq!(interpreter.run_program::<u64>("(my-sum 1 2 3)").unwrap(), 6);
     /// ```
     ///
+    #[allow(clippy::type_complexity)]
     pub fn add_function_ptr<T: 'static + ForeignData>(
         &self,
         function_symbol: &str,
@@ -389,26 +402,31 @@ impl ForeignData for u64 {
 }
 
 impl ForeignData for i64 {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(Expr::Num((*self).into()))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         expr.to_i64()
     }
 }
 
 impl ForeignData for u32 {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(Expr::Num((*self).into()))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         expr.to_u64().map(|e| e as u32)
     }
 }
 
 impl ForeignData for f32 {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         // use num_traits::FromPrimitive;
         let n = num_traits::FromPrimitive::from_f32(*self)
@@ -416,18 +434,21 @@ impl ForeignData for f32 {
         Ok(Expr::Num(n))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         expr.to_f32()
     }
 }
 
 impl ForeignData for usize {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         let n = num_traits::FromPrimitive::from_usize(*self)
             .ok_or_else(|| ErrorBridge::new(anyhow!("Could not convert {self} to u64")))?;
         Ok(Expr::Num(n))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         expr.to_usize()
     }
@@ -444,10 +465,12 @@ impl ForeignData for () {
 }
 
 impl ForeignData for bool {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(Expr::Bool(*self))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         match expr {
             Expr::Bool(b) => Ok(*b),
@@ -457,36 +480,43 @@ impl ForeignData for bool {
 }
 
 impl ForeignData for String {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(Expr::string(self.clone()))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         Ok(format!("{expr}"))
     }
 }
 
 impl ForeignData for Expr {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(self.clone())
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         Ok(expr.clone())
     }
 }
 
 impl ForeignData for RecordType {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(Expr::Record(self.clone()))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         expr.get_record().map_err(ErrorBridge::new)
     }
 }
 
 impl ForeignData for LispResult<usize> {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         match self {
             Ok(e) => Ok(Expr::num(*e)),
@@ -494,12 +524,14 @@ impl ForeignData for LispResult<usize> {
         }
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         Ok(expr.get_usize())
     }
 }
 
 impl ForeignData for LispResult<Expr> {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         match self {
             Ok(e) => Ok(e.clone()),
@@ -507,22 +539,26 @@ impl ForeignData for LispResult<Expr> {
         }
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         Ok(Ok(expr.clone()))
     }
 }
 
 impl ForeignData for Vector<Expr> {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(Expr::Tuple(self.clone()))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         expr.get_list().map_err(ErrorBridge::new)
     }
 }
 
 impl<T: ForeignData> ForeignData for Vec<T> {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         Ok(Expr::Tuple(
             self.iter()
@@ -531,6 +567,7 @@ impl<T: ForeignData> ForeignData for Vec<T> {
         ))
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         let res = expr
             .get_list()
@@ -543,6 +580,7 @@ impl<T: ForeignData> ForeignData for Vec<T> {
 }
 
 impl<T: ForeignData> ForeignData for Result<T, Box<dyn Error + Send>> {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         match self {
             Ok(t) => t.to_x9(),
@@ -550,12 +588,14 @@ impl<T: ForeignData> ForeignData for Result<T, Box<dyn Error + Send>> {
         }
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         Ok(T::from_x9(expr))
     }
 }
 
 impl<T: ForeignData> ForeignData for Option<T> {
+    #[inline]
     fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         match self {
             Some(item) => item.to_x9(),
@@ -563,6 +603,7 @@ impl<T: ForeignData> ForeignData for Option<T> {
         }
     }
 
+    #[inline]
     fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         match expr {
             Expr::Nil => Ok(None),
@@ -605,6 +646,7 @@ where
     fn to_x9_fn(self) -> (usize, crate::ast::X9FunctionPtr) {
         let f = move |args: Vector<Expr>, _sym: &SymbolTable| {
             crate::exact_len!(args, 1);
+            #[allow(clippy::redundant_closure)]
             let res = A::from_x9(&args[0]).map(|e| (self)(e));
             res.and_then(|e| e.to_x9()).map_err(|e| anyhow!("{e:?}"))
         };
@@ -715,6 +757,7 @@ where
     Out: ForeignData,
     F: Fn(A, B, C, D, E) -> Out + Sync + Send + 'static,
 {
+    #[allow(clippy::many_single_char_names)]
     fn to_x9_fn(self) -> (usize, crate::ast::X9FunctionPtr) {
         let f = move |args: Vector<Expr>, _sym: &SymbolTable| {
             crate::exact_len!(args, 5);
@@ -723,7 +766,9 @@ where
             let c = convert_arg!(C, &args[2]);
             let d = convert_arg!(D, &args[3]);
             let e = convert_arg!(E, &args[4]);
-            (self)(a, b, c, d, e).to_x9().map_err(|e| anyhow!("{e:?}"))
+            (self)(a, b, c, d, e)
+                .to_x9()
+                .map_err(|e| anyhow!("{e:?}"))
         };
         (5, Arc::new(f))
     }
