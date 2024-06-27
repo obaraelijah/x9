@@ -57,6 +57,12 @@ impl<T> Clone for StructRecord<T> {
     }
 }
 
+impl<T: PartialEq + 'static + Sync + Send> StructRecord<T> {
+    pub(crate) fn build(self) -> Expr {
+        Expr::Record(Box::new(self))
+    }
+}
+
 impl<T: PartialEq + 'static> StructRecord<T> {
     fn clone_with_new_inner(&self, new_inner: T) -> Self {
         StructRecord {
