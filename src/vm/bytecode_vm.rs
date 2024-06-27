@@ -1,6 +1,7 @@
 use anyhow::anyhow;
+use im::Vector;
 
-use crate::ast::{ByteCompiledFunction, Expr, LispResult, Symbol, SymbolTable};
+use crate::{ast::{ByteCompiledFunction, Expr, LispResult, Symbol, SymbolTable}, bad_types};
 
 use super::ByteCodeCompiler;
 
@@ -123,6 +124,23 @@ impl ByteCodeVM {
 
     fn get_user_input(&mut self) {
         todo!()
+    }
+
+    fn call_fn(&mut self, function: &Expr, num_args: Option<usize>) -> LispResult<ControlFlow> {
+        match function {
+            Expr::Function(f) => {
+                // We're a built-in, so handle that
+                let mut args = Vector::new();
+                for _ in 0..num_args.unwrap() {
+                    args.push_back(self.pop()?);
+                }
+                let res = f.call_fn(args, self.symbol_table())?;
+                self.push(res);
+                Ok(ControlFlow::Incr)
+            }
+            Expr::ByteCompiledFunction(f) => self.call_byte_compiled_fn(f),
+            otherwise => bad_types!("func", otherwise),
+        }
     }
 
     fn call_byte_compiled_fn(&mut self, f: &ByteCompiledFunction) -> LispResult<ControlFlow> {
