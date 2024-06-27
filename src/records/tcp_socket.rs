@@ -96,7 +96,11 @@ impl TcpListenerRecord {
     }
 
     pub(crate) fn make() -> Expr {
-        todo!()
+        StructRecord::record_builder(TcpListenerRecord::RECORD_NAME)
+            .init_fn(&TcpListenerRecord::bind)
+            .display_with(&TcpListenerRecord::display)
+            .add_method("listen", TcpListenerRecord::listen)
+            .build()
     }
 }
 
