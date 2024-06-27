@@ -513,3 +513,31 @@ where
         Box::new(ff)
     }
 }
+
+// IntoWriteFn: Two args
+
+impl<F, T, Out> IntoWriteFn<((), ((),)), T, InnerBlocker<((), (Out,))>> for F
+where
+    F: Fn(&mut T, &T) -> Out + Sync + Send + 'static,
+    Out: ForeignData,
+    T: Default + PartialEq + Sync + Send + 'static,
+{
+    fn into_write_fn(self) -> WriteFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 1);
+            let other = args[0].get_record()?;
+            match other.downcast_ref::<StructRecord<T>>() {
+                Some(other_rec) => {
+                    // TODO: Deadlock if same?
+                    let mut my_inner = sr.inner.lock();
+                    let other_inner = other_rec.inner.lock();
+                    (self)(&mut my_inner, &other_inner)
+                        .to_x9()
+                        .map_err(|e| anyhow!("{e:?}"))
+                }
+                None => crate::bad_types!(sr as &dyn Record, other), // TODO: Handle this
+            }
+        };
+        Box::new(ff)
+    }
+}

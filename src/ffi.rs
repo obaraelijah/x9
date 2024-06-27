@@ -1,8 +1,8 @@
-use std::{collections::HashMap, error::Error, path::Path, sync::Arc};
 use anyhow::anyhow;
 use im::Vector;
 use itertools::Itertools;
 use num_traits::cast::ToPrimitive;
+use std::{collections::HashMap, error::Error, path::Path, sync::Arc};
 
 use crate::{
     ast::{Expr, Function, LispResult, SymbolTable},
@@ -63,7 +63,7 @@ impl std::fmt::Display for ErrorBridge {
 /// let interpreter = X9Interpreter::new();
 /// ```
 ///  Thread Safety Note:
-/// 
+///
 /// Running several instances of the same interpreter (cloned)
 /// in parallel means that modifications to the symbol table
 /// may not be reflected at the same time in all threads.
@@ -766,9 +766,7 @@ where
             let c = convert_arg!(C, &args[2]);
             let d = convert_arg!(D, &args[3]);
             let e = convert_arg!(E, &args[4]);
-            (self)(a, b, c, d, e)
-                .to_x9()
-                .map_err(|e| anyhow!("{e:?}"))
+            (self)(a, b, c, d, e).to_x9().map_err(|e| anyhow!("{e:?}"))
         };
         (5, Arc::new(f))
     }
