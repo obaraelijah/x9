@@ -10,7 +10,10 @@ use im::{vector, Vector};
 use itertools::Itertools;
 
 use crate::modules::load_x9_stdlib;
-use crate::records::{DictRecord, RecordDoc};
+use crate::records::{DictMutRecord, DictRecord, RecordDoc};
+use crate::records::{
+    DynRecord, FileRecord, RegexRecord, SetRecord, TcpListenerRecord,
+};
 use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
