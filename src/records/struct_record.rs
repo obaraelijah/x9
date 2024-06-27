@@ -541,3 +541,48 @@ where
         Box::new(ff)
     }
 }
+
+impl<F, T> IntoWriteFn<(T,), T, InnerBlocker<(T, T)>> for F
+where
+    F: Fn(&mut T, &T) -> T + Sync + Send + 'static,
+    T: Default + PartialEq + Sync + Send + 'static,
+{
+    fn into_write_fn(self) -> WriteFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 1);
+            let other = args[0].get_record()?;
+            match other.downcast_ref::<StructRecord<T>>() {
+                Some(other_rec) => {
+                    // TODO: Deadlock if same?
+                    let mut my_inner = sr.inner.lock();
+                    let other_inner = other_rec.inner.lock();
+                    let new_inner = (self)(&mut my_inner, &other_inner);
+                    crate::record!(sr.clone_with_new_inner(new_inner))
+                }
+                None => crate::bad_types!(sr as &dyn Record, other), // TODO: Handle this
+            }
+        };
+        Box::new(ff)
+    }
+}
+
+// IntoWriteFn: Three Args
+
+impl<F, T, A, B, Out> IntoWriteFn<(A, B), T, Out> for F
+where
+    F: Fn(&mut T, A, B) -> Out + Sync + Send + 'static,
+    Out: ForeignData,
+    A: ForeignData,
+    B: ForeignData,
+{
+    fn into_write_fn(self) -> WriteFn<T> {
+        let ff = move |sr: &StructRecord<T>, args: Vector<Expr>, _sym: &SymbolTable| {
+            crate::exact_len!(args, 2);
+            let a = crate::convert_arg!(A, &args[0]);
+            let b = crate::convert_arg!(B, &args[1]);
+            let mut s = sr.inner.lock();
+            (self)(&mut s, a, b).to_x9().map_err(|e| anyhow!("{e:?}"))
+        };
+        Box::new(ff)
+    }
+}
