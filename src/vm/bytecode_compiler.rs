@@ -78,6 +78,14 @@ impl ByteCodeCompiler {
         self.instructions.len()
     }
 
+    fn compile_expr(&mut self, e: Expr) -> LispResult<()> {
+        todo!()
+    }
+
+    fn link(&mut self) -> LispResult<Vec<Instruction>> {
+        todo!()
+    }
+
     pub fn compile(&mut self, input: &str) -> LispResult<()> {
         todo!()
     }
