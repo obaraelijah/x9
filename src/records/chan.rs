@@ -9,10 +9,8 @@ impl ReadChan {
     pub(crate) const RECORD_NAME: &'static str = "ReadChan";
 
     fn new(self) -> Self {
-        Self { 
-            id: rand::random(),
-        }
-    } 
+        Self { id: rand::random() }
+    }
 }
 
 impl RecordDoc for ReadChan {
@@ -38,9 +36,7 @@ impl WriteChan {
     pub(crate) const RECORD_NAME: &'static str = "WriteChan";
 
     fn new(self) -> Self {
-        Self { 
-            id: rand::random(),
-        }
+        Self { id: rand::random() }
     }
 }
 

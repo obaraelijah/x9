@@ -1428,27 +1428,27 @@ pub fn create_stdlib_symbol_table_no_cli() -> SymbolTable {
 
 pub fn create_stdlib_symbol_table(opts: &Options) -> SymbolTable {
     let syms = make_stdlib_fns!(
-        // ARITHMETIC
-//         (
-//             "+",
-//             1,
-//             add_exprs,
-//             true,
-//             "Add two items together. Concatenates strings, lists, and tuples.
-// Example: (+ 1 1 1) ; 3
-// Example: (+ \"Hello \" \"World\") ; \"Hello World\"
-// "
-//         ),
-//         (
-//             "-",
-//             1,
-//             sub_exprs,
-//             "Subtracts all items from the first. Only works with Nums.
-// Example: (- 2 1 1) ; 0
-// "
-//         ),
+            // ARITHMETIC
+    //         (
+    //             "+",
+    //             1,
+    //             add_exprs,
+    //             true,
+    //             "Add two items together. Concatenates strings, lists, and tuples.
+    // Example: (+ 1 1 1) ; 3
+    // Example: (+ \"Hello \" \"World\") ; \"Hello World\"
+    // "
+    //         ),
+    //         (
+    //             "-",
+    //             1,
+    //             sub_exprs,
+    //             "Subtracts all items from the first. Only works with Nums.
+    // Example: (- 2 1 1) ; 0
+    // "
+    //         ),
 
-    );
+        );
     if !opts.do_not_load_native_stdlib {
         if let Err(e) = load_x9_stdlib(opts, &syms) {
             panic!("Failed to load stdlib: {e:?}");

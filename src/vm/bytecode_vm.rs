@@ -1,7 +1,10 @@
 use anyhow::anyhow;
 use im::Vector;
 
-use crate::{ast::{ByteCompiledFunction, Expr, LispResult, Symbol, SymbolTable}, bad_types};
+use crate::{
+    ast::{ByteCompiledFunction, Expr, LispResult, Symbol, SymbolTable},
+    bad_types,
+};
 
 use super::ByteCodeCompiler;
 
