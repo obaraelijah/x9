@@ -1,5 +1,6 @@
-use super::RecordDoc;
+use super::{RecordDoc, SetRecord};
 
+#[derive(Default)]
 pub(crate) struct ReadChan {
     id: usize,
 }
@@ -28,6 +29,7 @@ impl RecordDoc for ReadChan {
     }
 }
 
+#[derive(Default)]
 pub(crate) struct WriteChan {
     id: usize,
 }
