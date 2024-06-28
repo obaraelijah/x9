@@ -9,3 +9,15 @@ impl ReadChan {
         }
     } 
 }
+
+pub(crate) struct WriteChan {
+    id: usize,
+}
+
+impl WriteChan {
+    fn new(self) -> Self {
+        Self { 
+            id: rand::random(),
+        }
+    }
+}
