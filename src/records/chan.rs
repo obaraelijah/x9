@@ -21,7 +21,11 @@ impl ReadChan {
             id: rand::random() 
         }
     }
-
+    
+    fn is_closed(&self) -> bool {
+        self.reader.lock().is_some()
+    }
+    
     fn close(&mut self) {
         self.reader.lock().take();
     }
