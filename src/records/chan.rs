@@ -1,15 +1,29 @@
-use super::{RecordDoc, SetRecord};
+// use super::{RecordDoc, SetRecord};
+
+use parking_lot::Mutex;
+
+use crate::ast::Expr;
+
+use super::RecordDoc;
 
 #[derive(Default)]
 pub(crate) struct ReadChan {
+    reader: Mutex<Option<Expr>>,
     id: usize,
 }
 
 impl ReadChan {
     pub(crate) const RECORD_NAME: &'static str = "ReadChan";
 
-    fn new(self) -> Self {
-        Self { id: rand::random() }
+    fn new(reader: Expr) -> Self {
+        Self { 
+            reader: Mutex::new(Some(reader)),
+            id: rand::random() 
+        }
+    }
+
+    fn close(&mut self) {
+        self.reader.lock().take();
     }
 }
 
