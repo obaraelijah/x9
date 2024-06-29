@@ -25,6 +25,10 @@ impl ReadChan {
     fn close(&mut self) {
         self.reader.lock().take();
     }
+
+    fn display(&self) -> String {
+        format!("SendChan<{:?}>", self.reader.lock())
+    }
 }
 
 impl RecordDoc for ReadChan {
