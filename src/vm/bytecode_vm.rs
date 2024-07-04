@@ -1,10 +1,11 @@
-use anyhow::anyhow;
-use im::Vector;
+use std::io::stdin;
 
 use crate::{
-    ast::{ByteCompiledFunction, Expr, LispResult, Symbol, SymbolTable},
     bad_types,
+    ast::{ByteCompiledFunction, Expr, LispResult, Symbol, SymbolTable},
 };
+use anyhow::anyhow;
+use im::Vector;
 
 use super::ByteCodeCompiler;
 
@@ -75,7 +76,7 @@ impl ByteCodeVM {
             "--------------------------------------------------------------------------------"
         );
         for (idx, instruction) in self.program.iter().enumerate() {
-            println!("{idx:<5}: {instruction:?}");
+            println!("{:<5}: {:?}", idx, instruction);
         }
         println!(
             "--------------------------------------------------------------------------------"
@@ -83,7 +84,19 @@ impl ByteCodeVM {
     }
 
     pub fn run(&mut self, input: &str) -> LispResult<Expr> {
-        todo!()
+        let (program, named_funcs) = self.compiler.compile(input)?;
+        self.program = program;
+        for (func, doc) in named_funcs.into_iter() {
+            let func_sym = func.symbol;
+            self.root_symbol_table
+                .add_symbol(func_sym, Expr::ByteCompiledFunction(func));
+            if let Some(doc) = doc {
+                self.root_symbol_table
+                    .add_doc_item(func_sym.to_string(), doc);
+            }
+        }
+        self.pretty_print_program();
+        self.execute()
     }
 
     fn symbol_table(&self) -> &SymbolTable {
@@ -126,7 +139,27 @@ impl ByteCodeVM {
     }
 
     fn get_user_input(&mut self) {
-        todo!()
+        loop {
+            let mut input = String::new();
+            stdin().read_line(&mut input).unwrap();
+            println!("{:<5}: {:?}", self.instp, self.program[self.instp]);
+            match input.as_str().trim_end() {
+                "n" => return,
+                "pp" => self.pretty_print_program(),
+                "ps" => {
+                    println!("{:?}", &self.stack);
+                }
+                "pl" => {
+                    println!("{:?}", self.symbol_table().get_func_locals());
+                }
+                _ if input.starts_with("p ") => println!(
+                    "{:?}",
+                    self.symbol_table()
+                        .lookup(&input.split_ascii_whitespace().nth(1).unwrap().into())
+                ),
+                _ => return,
+            };
+        }
     }
 
     fn call_fn(&mut self, function: &Expr, num_args: Option<usize>) -> LispResult<ControlFlow> {
@@ -159,10 +192,112 @@ impl ByteCodeVM {
     }
 
     fn execute(&mut self) -> LispResult<Expr> {
-        todo!()
+        while self.instp < self.program.len() {
+            if self.debug_mode {
+                self.get_user_input();
+            }
+            let res = match self.program[self.instp].clone() {
+                Instruction::Push(expr) => {
+                    // TODO: fast track primitive types
+                    // TODO: Do we want to evaluate things we push?
+                    self.stack.push(expr.eval(self.symbol_table())?);
+                    ControlFlow::Incr
+                }
+                Instruction::Test(fail_loc) => {
+                    let test = self.pop()?;
+                    if test.is_truthy(self.symbol_table())? {
+                        ControlFlow::Incr
+                    } else {
+                        ControlFlow::Jump(fail_loc)
+                    }
+                }
+                Instruction::Jump(loc) => ControlFlow::Jump(loc),
+                Instruction::LocalScopeBind(sym) => {
+                    let value = self.pop()?;
+                    self.symbol_table_mut().add_func_local_sym(sym, value)?;
+                    // dbg!(&self.symbol_table().get_func_locals());
+                    ControlFlow::Incr
+                }
+                Instruction::EnterScope => {
+                    self.add_function_scope();
+                    ControlFlow::Incr
+                }
+                Instruction::ExitScope => {
+                    self.remove_function_scope()?;
+                    ControlFlow::Incr
+                }
+                Instruction::Ret => {
+                    self.restore_instp()?;
+                    ControlFlow::Incr
+                }
+                Instruction::BreakPoint => {
+                    self.debug_mode = true;
+                    ControlFlow::Incr
+                }
+                Instruction::Head => {
+                    let mut collection = self.pop()?.get_list()?;
+                    self.push(collection.pop_front().unwrap_or(Expr::Nil));
+                    ControlFlow::Incr
+                }
+                Instruction::Tail => {
+                    let collection = self.pop()?.get_list()?;
+                    self.push(Expr::Tuple(collection.skip(1)));
+                    ControlFlow::Incr
+                }
+                Instruction::Cons => {
+                    let item = self.pop()?;
+                    let collection = self.pop()?.push_front(item)?;
+                    self.push(collection);
+                    ControlFlow::Incr
+                }
+                Instruction::Add(num_to_add) => {
+                    let mut base = Expr::num(0);
+                    for _ in 0..num_to_add {
+                        base = (base + &self.pop()?)?;
+                    }
+                    self.push(base);
+                    ControlFlow::Incr
+                }
+                Instruction::CallFn(num_args) => {
+                    let function = self.pop()?;
+                    // TODO: Handle records
+                    self.call_fn(&function, Some(num_args))?
+                }
+                Instruction::Fail(reason) => {
+                    return Err(anyhow!("{}", reason));
+                }
+                Instruction::Pop => {
+                    self.pop()?;
+                    ControlFlow::Incr
+                }
+                Instruction::GlobalBind(sym) => {
+                    let value = self.pop()?;
+                    self.symbol_table().add_symbol(sym, value);
+                    ControlFlow::Incr
+                }
+                Instruction::Map => {
+                    let f = self.pop()?;
+                    // TODO: Handle lazy iters
+                    let coll = self.pop()?.get_list()?;
+                    let mut output_coll = Vector::new();
+                    for item in coll.into_iter() {
+                        self.push(item);
+                        self.call_fn(&f, None)?;
+                        output_coll.push_back(self.pop()?);
+                    }
+                    ControlFlow::Incr
+                }
+                Instruction::Halt => break,
+            };
+            // dbg!(&self.stack);
+            match res {
+                ControlFlow::Incr => self.instp += 1,
+                ControlFlow::Jump(loc) => self.instp = loc,
+            }
+        }
+        self.pop()
     }
 }
-
 // (+ 1 2)
 // push_arg 1
 // push_arg 2
