@@ -123,12 +123,49 @@ impl RecordDoc for RegexRecord {
     }
 
     fn type_doc() -> &'static str {
-        "Regular Expressions - regular search patterns."
+        "Regular Expressions - regular search patterns.
+
+This is backed by the excellent regex crate: https://github.com/rust-lang/regex
+
+Example:
+
+;; Compile a regex
+(def a (re::compile \"(abc)+\"))
+
+;; Test if a string matches
+
+(.is_match a \"abcabc\") ;; true
+(.is_match a \"ab\") ;; false
+"
     }
 
     fn method_doc() -> &'static [(&'static str, &'static str)] {
         &[
-            // TODO: Examples 
+            (
+                "is_match",
+                "Returns true if a string matches the regex.
+
+Example:
+(def re (re::compile \"abc\"))
+(assert-eq true (.is_match re \"abc\") \"Did not match!\")",
+            ),
+            (
+                "captures",
+                "Returns a list of lists of all captures in the input.
+;; Example
+(def lines \"15-16 f: ffffffffffffffhf
+             6-8 b: bbbnvbbb
+             6-10 z: zhzzzzfzzzzzzzzzpzz
+             9-13 s: dmssskssqsssssf\")
+(def re (re::compile \"(\\d+)-(\\d+) (.): (.*)\"))
+(.captures re lines)
+;; Outputs:
+((tuple \"15\" \"16\" \"f\" \"ffffffffffffffhf\")
+ (tuple \"6\" \"8\" \"b\" \"bbbnvbbb\")
+ (tuple \"6\" \"10\" \"z\" \"zhzzzzfzzzzzzzzzpzz\")
+ (tuple \"9\" \"13\" \"s\" \"dmssskssqsssssf\"))
+",
+            ),
         ]
     }
 }
