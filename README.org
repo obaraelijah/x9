@@ -1,0 +1,7 @@
+#+AUTHOR: Elijah Samson
+
+* The x9 Programming Language
+
+x9 is a lisp I built to better understand programming languages and interpreters.
+
+The standard library is being written in either x9 or rust for performance.
