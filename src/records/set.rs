@@ -65,12 +65,74 @@ impl RecordDoc for SetRecord {
     }
 
     fn type_doc() -> &'static str {
-        "Basic Hash Set in x9."
+        "Basic Hash Set in x9.
+
+;; Contains. Test whether an element exists in a Set. O(1) time.
+;; Example:
+(.contains (Set 0 1 2 3) 2)  ;; true
+(.contains (Set 0 1 2 3) 10) ;; false
+
+;; Union (creates new Set with elements from each)
+;; Example:
+(.union (Set 1 2 3)
+        (Set 4 5 6)) ;; Set<{4, 5, 2, 6, 1, 3}>
+(.union (apply Set (range 5)) (apply Set (range 5 10)))
+;; Set<{5, 1, 7, 4, 3, 2, 8, 0, 9, 6}>
+
+;; Intersection. Obtain the intersection of two Sets.
+;; Example:
+(.intersection (apply Set (range 10)) (apply Set (range 5 10)))
+;; Set<{5, 6, 9, 7, 8}>
+
+;; to_list. Convert the Set into a list. Order is undefined.
+;; Example:
+(.to_list (apply Set (range 5))) ;; (1 2 0 3 4)
+
+;; len. Get the number of elements in a Set. Implements the \"len\" magic method.
+;; Example:
+(.len (Set '(0 1 2 3)))  ;; 4
+(len (Set '())) ;; 0
+"
     }
 
     fn method_doc() -> &'static [(&'static str, &'static str)] {
         &[
-            // TODO: Examples
+            (
+                "contains",
+                "Test whether an element exists in a set. O(1) time.
+Example:
+(.contains (Set 0 1 2 3) 2)  ;; true
+(.contains (Set 0 1 2 3) 10) ;; false",
+            ),
+            (
+                "len",
+                "Get the number of elements in a Set. Implements the \"len\" magic method.
+Example:
+(.len (Set 0 1 2 3))  ;; 4
+(len (Set)) ;; 0",
+            ),
+            (
+                "union",
+                "Obtain the union of two Sets.
+Example:
+(.union (Set (range 5)) (Set (range 5 10)))
+;; Set<{5, 1, 7, 4, 3, 2, 8, 0, 9, 6}>
+",
+            ),
+            (
+                "intersection",
+                "Obtain the intersection of two Sets.
+Example:
+(.intersection (apply Set (range 10)) (apply Set (range 5 10)))
+;; Set<{5, 6, 9, 7, 8}>",
+            ),
+            (
+                "to_list",
+                "Convert the Set into a list. Order is undefined.
+Example:
+(.to_list (apply Set (range 5))) ;; (1 2 0 3 4)
+",
+            ),
         ]
     }
 }
