@@ -2,15 +2,16 @@
 
 use crate::cli::report_error;
 use structopt::StructOpt;
-
 use x9::{cli, formatter, modules, stdlib, vm::ByteCodeVM};
 
 fn main() -> Result<(), i32> {
     let opt = cli::Options::from_args();
     let mut sym_table = stdlib::create_stdlib_symbol_table(&opt);
+    
     if opt.formatter {
         return formatter::format(&opt);
     }
+    
     if opt.files.is_empty() {
         cli::read_cli(&sym_table, opt.byte_compile);
     } else {
@@ -32,6 +33,7 @@ fn main() -> Result<(), i32> {
             cli::read_cli(&sym_table, opt.byte_compile);
         }
     }
+    
     sym_table.wait_on_threads();
     Ok(())
 }
