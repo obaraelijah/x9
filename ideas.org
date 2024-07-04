@@ -1,12 +1,14 @@
 * Ideas
 
-** TODO Add channels and a =go= function
+** DONE Add channels and a =go= function
+CLOSED: [2024-07-04 Tue 11:19]
 
-** TODO Allow truthiness override for Records
+** DONE Allow truthiness override for Records
+CLOSED: [2024-07-04 Thur 12.30]
 
-** TODO Finish up StructRecord conversion; deprecate stdlib =dict=
+** DONE Finish up StructRecord conversion; deprecate stdlib =dict=
 
-** TODO Fix a stack overflow in this function:
+** DONE Fix a stack overflow in this function:
 
 #+begin_src x9
  (defn factorial (& coll)
@@ -42,13 +44,14 @@ Something like =Pattern= so it works with def, functions, etc:
 
 See the =coroutines= example.
 
-** TODO Remove default bound in StructRecord
+** DONE Remove default bound in StructRecord
 
-** TODO Add a byte code compiler and interpreter
+** DONE Add a byte code compiler and interpreter
+CLOSED: [2024-07-04 Thur 20.10]
 
-** TODO Completely rewrite the parser
+** DONE Completely rewrite the parser
 
-** TODO Add an http server [1/1]
+** DONE Add an http server [1/1]
 
 *** TODO Add a tcp socket server
 
@@ -68,4 +71,4 @@ Fn<foo, 2, [ a b ]>
 false
 #+end_src
 
-** TODO Make this work - =(def  ͡° ͜ʖ ͡° 3)=
+** DONE Make this work - =(def  ͡° ͜ʖ ͡° 3)=
