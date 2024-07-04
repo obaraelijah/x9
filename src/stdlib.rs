@@ -1,14 +1,9 @@
-use std::{
-    io::Write,
-    sync::{atomic::AtomicBool, Arc},
-    time::{Duration, Instant},
-};
-
 use anyhow::{anyhow, bail, ensure, Context};
 use bigdecimal::{BigDecimal, FromPrimitive, One, ToPrimitive};
 use im::{vector, Vector};
 use itertools::Itertools;
 
+use crate::iterators::CartesianProduct;
 use crate::modules::load_x9_stdlib;
 use crate::records::{DictMutRecord, DictRecord, RecordDoc};
 use crate::records::{DynRecord, FileRecord, RegexRecord, ReadChan, WriteChan, SetRecord, TcpListenerRecord};
@@ -1175,6 +1170,11 @@ fn go(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
 }
 
 // TODO: Add chan
+fn chan(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    exact_len!(exprs, 0);
+    let (write, read) = crate::records::make_chan();
+    Ok(Expr::Tuple(vector![write, read]))
+}
 
 fn shuffle(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     exact_len!(exprs, 1);
@@ -1367,7 +1367,11 @@ fn assert_eq(exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr
 }
 
 use std::borrow::Cow;
+use std::io::Write;
 use std::iter::repeat;
+use std::sync::atomic::AtomicBool;
+use std::time::Duration;
+use std::{sync::Arc, time::Instant};
 
 macro_rules! make_stdlib_fns {
     ( $(($sym:literal, $minargs:expr, $func:expr, $eval_args:expr, $doc:expr)),* ) => {
@@ -1428,30 +1432,673 @@ pub fn create_stdlib_symbol_table_no_cli() -> SymbolTable {
 
 pub fn create_stdlib_symbol_table(opts: &Options) -> SymbolTable {
     let syms = make_stdlib_fns!(
-            // ARITHMETIC
-    //         (
-    //             "+",
-    //             1,
-    //             add_exprs,
-    //             true,
-    //             "Add two items together. Concatenates strings, lists, and tuples.
-    // Example: (+ 1 1 1) ; 3
-    // Example: (+ \"Hello \" \"World\") ; \"Hello World\"
-    // "
-    //         ),
-    //         (
-    //             "-",
-    //             1,
-    //             sub_exprs,
-    //             "Subtracts all items from the first. Only works with Nums.
-    // Example: (- 2 1 1) ; 0
-    // "
-    //         ),
+        // ARITHMETIC
+        (
+            "+",
+            1,
+            add_exprs,
+            true,
+            "Add two items together. Concatenates strings, lists, and tuples.
+Example: (+ 1 1 1) ; 3
+Example: (+ \"Hello \" \"World\") ; \"Hello World\"
+"
+        ),
+        (
+            "-",
+            1,
+            sub_exprs,
+            true,
+            "Subtracts all items from the first. Only works with Nums.
+Example: (- 2 1 1) ; 0
+"
+        ),
+        (
+            "*",
+            1,
+            mult_exprs,
+            true,
+            "Multiply all items against the first. Works with Nums and (String Num*)
+Example: (* 1 2 3) ; 6
+         (* \"abc\" 3) ; \"abcabcabc\"
+"
+        ),
+        (
+            "%",
+            2,
+            rem_exprs,
+            true,
+            "Take the remainder of the first item against the second.
+    Example: (% 4 2) ; 0"
+        ),
+        (
+            "/",
+            2,
+            div_exprs,
+            true,
+            "Divide the first element by the rest.
+Example: (/ 8 2 2 2) ; 1
+"
+        ),
+        (
+            "sqrt",
+            1,
+            sqrt_exprs,
+            true,
+            "Take the square root of a number. There's minor precision loss as it's way faster to convert to floats internally over using a bigdecimal.
+Example: (sqrt 9) ; 3
+"
+        ),
+        (
+            "nth-root",
+            2,
+            nth_root,
+            true,
+            "Take the nth root of a number
+Example: (nth-root 3 9) ; 3
+"
+        ),
 
-        );
+        (
+            "=",
+            1,
+            eq_exprs,
+            true,
+            "Test if all items are equal.
+Example: (= 1 1) ; true
+         (= 1) ; true
+"
+        ),
+        (
+            "<",
+            2,
+            lt_exprs,
+            true,
+            "Test if the first item is strictly smaller than the rest.
+    Example: (< 0 1 2) ; true"
+        ),
+        (
+            "<=",
+            2,
+            lte_exprs,
+            true,
+            "Test if the first item is smaller or equal to the rest.
+    Example: (<= 0 0 0.05 1) ; true"
+        ),
+        (
+            ">",
+            2,
+            gt_exprs,
+            true,
+            "Test if the first item is strictly greater than the rest.
+    Example: (> 10 0 1 2 3 4) ; true"
+        ),
+        (
+            ">=",
+            2,
+            gte_exprs,
+            true,
+            "Test if the first item is greater than or equal to the rest.
+    Example: (>= 10 10 5) ; true"
+        ),
+        ("inc", 1, inc_exprs, true, "Increment the given number.
+Example:
+(inc 2.2) ;; 3.3
+(inc 1) ;; 2
+"),
+        ("dec", 1, dec_exprs, true, "Decrement the given number.
+Example:
+(dec 2.2) ;; 3.3
+(dec 1) ;; 2
+"),
+        ("pow", 2, pow, true, "Raise a number to an exponent.
+Example:
+(pow 2 3) ;; 8
+(pow 10 3) ;; 1000
+"),
+        ("floor", 1, floor, true, "Floor a number. Throws an error if the number is outside the domain of a u64.
+Example:
+(floor 5.5) ;; 5.5
+"),
+        ("int", 1, int, true, "Create an integer from the input.
+
+Example:
+(int 3.2) ;; 3
+"),
+        (
+            "not",
+            1,
+            not,
+            true,
+            "Invert the bool. true becomes false and vice-versa."
+        ),
+        ("or", 1, or, true, "logical or."),
+        ("and", 1, and, true, "logical and."),
+        ("xor", 1, xor, true, "logical xor."),
+        // // MISC
+        (
+            "ident",
+            0,
+            ident,
+            true,
+            "Identity function. Returns what you give it."
+        ),
+        (
+            "quote",
+            0,
+            quote,
+            false,
+            "Transforms the given input into a quote. Usually you will want to use the '(1 2 3) syntax."
+        ),
+        (
+            "symbol",
+            0,
+            symbol,
+            false,
+            "Turn a string into a symbol"
+        ),
+        (
+            "str",
+            1,
+            string,
+            true,
+            "Make a string"
+        ),
+        (
+            "bool",
+            1,
+            bool,
+            true,
+            "Coerce a value to bool. In general if a collection is non-empty, it is true. The len method is called on Records"
+        ),
+        (
+            "print",
+            1,
+            print,
+            true,
+            "Print the given argument WITHOUT a newline."
+        ),
+        (
+            "println",
+            1,
+            println,
+            true,
+            "Print the given argument WITH a newline."
+        ),
+        (
+            "input",
+            1,
+            input,
+            true,
+            "Get user input from stdin"
+        ),
+        (
+            "split",
+            2,
+            split,
+            true,
+            "Split a string with some substring.
+Example:
+>>> (split \",\" \"hello, world\")
+(tuple \"hello\" \" world\")
+"
+        ),
+        (
+            "replace",
+            3,
+            replace,
+            true,
+            "Replace a substring in a string with some other string.
+Example:
+>>> (replace \"abc\" \"OwO\" \"abc def\")
+\"OwO def\""
+        ),
+        (
+            "ident-exists",
+            1,
+            ident_exists,
+            false,
+            "Returns true if a given symbol exists in the interpeter"
+        ),
+        (
+            "eval",
+            1,
+            eval,
+            true,
+            "Eval an expression.
+Example (in repl):
+>>> '(+ 1 2)
+(+ 1 2)
+>>> (eval '(+ 1 2))
+3"
+        ),
+        (
+            "parse",
+            1,
+            parse,
+            true,
+            "Parse an expression.
+Example (in repl):
+>>> (parse \"(+ 1 2)\")"
+        ),
+        (
+            "def",
+            2,
+            def,
+            false,
+            "Associate a given symbol with a value. Overwrites local variables.
+Example:
+>>> (def a 3)
+>>> a
+3
+"
+        ),
+        ("cond", 2, cond, false, "Branching control flow construct. Given an even list of [pred then], if `pred` is true, return `then`.
+Example:
+(def input 10)
+(cond
+  (= input 3)  (print \"input is 3\")
+  (= input 10) (print \"input is 10\")
+  true         (print \"hit base case, input is: \" input))
+"),
+        ("loop", 2, do_loop, false, "Not done yet. Loop in a weird way. Repeatedly runs the body until (break) is called."),
+        ("match", 3, expr_match, false, "Branching control flow construct. Given an item and an even list of [value then], if `item` == `value`, return `then`.
+Example:
+(def input 10)
+(match input
+  3  (print \"input is 3\")
+  10 (print \"input is 10\")
+  _  (print \"hit base case, input is: \" input))
+"),
+
+        ("if", 3, if_gate, false, "Branching control flow construct. Given pred?, then, and else, if pred? is true, return then, otherwise, else.
+Note: Does not evaluate branches not taken.
+Example:
+(def input 10)
+(if (= input 10)
+  (print \"input is 10!\")
+  (print \":[ input is not 10\"))
+"),
+        ("shuffle", 1, shuffle, true, "Shuffle (randomize) a given list.
+Example:
+>>> (shuffle (range 10))
+(6 3 2 9 4 0 1 8 5 7)
+"),
+        ("go", 1, go, true, "Run a function in a new thread. Example:
+(go (fn ()
+        (do
+         (sleep 2)
+         (println \"from another thread!\"))))
+
+;; After two seconds, something is printed "),
+        ("chan", 0, chan, true, "Make a channel. Returns a tuple of (writer, reader). Example:
+(bind
+ ((w r) (chan))
+ (do
+   (go (fn () (print-recv r)))
+   (.send w \"in bind context 1\")
+   (sleep 1)
+   (.send w \"in bind context 2\")
+   (.close w)
+  ))
+
+;; Two things are printed."),
+        ("random_bool", 0, random_bool, true, "Randomly return true or false."),
+        ("random_int", 2, random_int, true, "Randomly return an integer between lower and upper.
+
+Example:
+(random_int 0 10) ;; Returns a num between 0 and 10 (exclusive)"),
+        ("panic", 1, panic, true, "Abort the program printing the given message.
+
+Example: (panic \"goodbye\") ; kills program
+
+Your console will print the following:
+
+thread 'main' panicked at 'goodbye', src/stdlib.rs:216:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+... and the interpreter will stop.
+"),
+        ("primes", 1, primes, true, "Prime numbers less than `n`."),
+        ("divisors", 1, divisors, true, "Divisors of `n`. Example:
+    (divisors 20) ;; ^(1 2 4 5 10 20)"),
+        ("clrf", 0, clrf, true, "HACK! Returns \r\n as the parser is buggy atm.
+    Example: (clrf) ; \"\r\n\""),
+        ("timestamp", 0, timestamp, true, "Returns a unix timestamp.
+    Example: (timestamp \"%b %-d, %-I:%M\") ; \"Jul 2, 5:15\""),
+        ("name-of", 1, name_of, true, "Returns the name of the object.
+    Example: (name-of +) ; \"+\""),
+        ("sleep", 1, sleep, true, "Sleep for n seconds.
+    Example: (sleep 10) ; sleep for 10 seconds."),
+        ("type", 1, type_of, true, "Return the type of the argument as a string.
+    Example: (type \"hello\") ; str"),
+        ("doc", 1, doc, false, "Return the documentation of a symbol as a string.
+    Example: (doc doc) ; Return the documentation of a symbol as a..."),
+        ("err", 1, err, true, "Return an error with a message string.
+    Example: (err \"Something bad happened!\") ; return an error"),
+        ("all-symbols", 0, all_symbols, true, "Return all symbols defined in the interpreter."),
+        ("include", 1, include, true, "Include a file into the interpreter."),
+        // FUNC TOOLS
+        ("map", 1, map, true, "Apply a function to each element of a sequence and return a list.
+Example: (map inc '(1 2 3)) ; (2 3 4)
+"),
+        ("mapt", 1, mapt, true, "Apply a function to each element of a sequence and return a tuple.
+Example: (map inc '(1 2 3)) ; ^(2 3 4)
+"),
+        ("->", 1, threading_operator, true, "DOCS TBD"),
+        ("inline_transform", 2, inline_transform, true, "Given a list of data and another of functions, apply each function pairwise onto the list.
+Example:
+
+(defn adder-maker (x) (fn (y) (+ x y)))
+
+(inline_transform
+  '(1 1 1)
+   (list (adder-maker 1) (adder-maker 2) (adder-maker 3)))  ;; ^(2 3 4)
+"),
+        ("foreach", 2, foreach, true, "Eagerly apply the given function to a sequence or list.
+Example:
+(foreach
+  (fn (x) (println x))
+  (range 20)) ; prints 0 to 20. Returns ().
+
+(foreach
+  (fn (x) (println x))
+  (take 5 (map (fn (x) (* x x x x x x)) (range)))) ; prints 0, 1, 64, 729, 4096
+"),
+        ("filter", 1, filter, true, "Retain elements in a sequence according to a predicate.
+Example:
+(defn is-odd (x) (= 1 (% x 2)))
+(filter is-odd (range 20)) ; outputs (1 3 5 7 9 11 13 15 17 19)
+"),
+        ("any", 2, any, true, "Ask whether a predicate is true in some sequence. Short circuits."),
+        ("all", 2, all, true, "Ask whether a predicate is true for every element of a sequence. Short circuits."),
+        ("lazy", 1, lazy, true, "Turn a list into a lazy sequence. Useful for building complex iterators over some source list."),
+        ("skip", 2, skip, true, "Skip some amount in a lazy iterator."),
+        ("product", 1, CartesianProduct::lisp_res, true, "Cartesian Product every list passed in.
+Example:
+>>> (doall (product '(0 1) '(0 1) '(0 1)))
+(
+  (tuple 0 0 0)
+  (tuple 1 0 0)
+  (tuple 0 1 0)
+  (tuple 1 1 0)
+  (tuple 0 0 1)
+  (tuple 1 0 1)
+  (tuple 0 1 1)
+  (tuple 1 1 1)
+)
+"),
+        ("apply", 2, apply, true, "Apply a function to a given list.
+(def my-list '(1 2 3))
+(apply + my-list) ; outputs 6
+"),
+        ("do", 1, exprs_do, false, "Evaluate a sequence of expressions and return the last one.
+Example:
+(defn complex-fn (x)
+  (do
+    (print \"current state: \" x)
+    (+ x x)))
+"),
+        ("partial", 1, partial, true, ";; Construct a partial function.
+
+;; Example:
+(defn foobar (x y z) (+ x y z))
+
+(def part (partial foobar 1 2))
+(part 3) ;; 6
+
+((partial foobar 1) 0 -1) ;; 0
+
+(partial + 1) ;; Fn<Partial<Fn<+, 1, [ ]>; remaining=0>, 0, [ ]>
+"),
+        ("comp", 1, comp, true, "Compose given functions and return a new function. NOT IMPLEMENTED YET!"),
+        ("reduce", 2, reduce, true, "Reduce (fold) a given sequence using the given function. Reduce is multi-arity, and will accept an `init` parameter.
+Example:
+(reduce + '(1 2 3)) ; 6
+(reduce + 100 '(1 2 3)) ; 106
+"),
+        // Functions
+        ("fn", 0, func, false, "Create a anonymous function.
+Example:
+(fn (x) (* x 2)) ; Fn<AnonFn, 1, [ x ]>
+"),
+        ("defn", 3, defn, false, "Define a function and add it to the symbol table. Supports doc strings.
+Example:
+(defn is-odd? (x) (= 1 (% x 2)))
+(defn get-odd-numbers
+  \"Extract the odd numbers out of the given sequence `x`\"
+  (x)
+  (filter is-odd? x)) ; for fun, try (doc get-odd-numbers)
+"),
+        ("anon-fn-sugar", 1, anon_fn_sugar, false,
+         "Create an anonymous, automatic binding function. You normally want to use the #(+ 1 2) syntax. Fields are labelled $1, $2, $3, and so on.
+
+Example:
+
+(#(+ $1 $2) 1 2) ;; 3
+(anon-fn-sugar (+ $1 $2)) ;; Fn<AnonFn, 0, [ ]>
+
+
+Note: This currently does not capture values.
+
+;; >>> (def foo (fn (x) #(+ $1 x)))
+;; nil
+;; >>> ((foo 3) 5)
+;; Error: Unknown Symbol x
+;;
+;; Stacktrace:
+;;   - Error in Fn<AnonFn, 0, [ ]>, with args (5)
+"),
+        ("bind", 2, bind, false, "Bind symbol-value pairs, adding them to the symbol table.
+Example:
+(defn quicksort
+  \"Sort a list.\"
+  (l)
+  (cond
+   (empty? l) l
+   true (bind
+         (pivot (head l)
+          rest  (tail l)
+          le    (filter (fn (x) (<= x pivot)) rest)
+          ge    (filter (fn (x) (> x pivot)) rest))
+         (+ (quicksort le) (list pivot) (quicksort ge)))))
+
+;; Bind also supports list patterns
+(bind ((x y) '(1 2)) (+ x y)) ;; 3
+"),
+        // Iterators
+        ("take", 2, take, true, "Take the first `n` items from a list or sequence.
+Example:
+(take 2 '(1 2 3)) ; (1 2)
+(take 5 (range)) ; lazy seq of (0 1 2 3 4)
+(doall (take 5 (range))) ; (0 1 2 3 4)
+"),
+        ("find", 2, find, true, "Find and return some value matching a predicate in an iterator.
+
+Note: This will stop iterating once it's found an item. If nothing is found, nil is returned.
+
+Example:
+
+>>> (find #(= $1 3) (take 4 (range)))
+3
+>>> (find #(= $1 300) (take 4 (range)))
+nil
+"),
+        ("slice", 3, slice, true, "Slice a list.
+Example:
+
+>>> (def ll '(1 2 3 4 5 6))
+nil
+>>> (slice 0 2 ll)
+(tuple 1 2)
+"),
+        ("take-while", 2, take_while, true, "Continue taking items while `pred` is true.
+Example:
+(defn less-than-five (x) (< x 5))
+(doall (take-while less-than-five (range))) ; (0 1 2 3 4)
+(take 2 '(1 2 3)) ; (1 2)
+(take 5 (range)) ; lazy seq of (0 1 2 3 4)
+(doall (take 5 (range))) ; (0 1 2 3 4)
+"),
+        ("doall", 1, doall, true, "Evaluate a sequence, collecting the results into a list.
+Example:
+(doall (take 5 (range))) ; (0 1 2 3 4)
+"),
+        // Dicts
+        ("dict", 0, make_dict, true, "Create a dict from the given elements.
+Example:
+(dict \"a\" 1 \"b\" 2) ;
+"),
+        ("assoc", 1, assoc, true, "Create a new dict from an old dict with the given elements.
+Example:
+(assoc (dict) 1 2 3 4) ; {1: 2, 3: 4}
+"),
+        ("remove", 2, remove, true, "Remove a key-value pair from a dict.
+Example:
+(remove (dict 1 2) 1) ; {}
+"),
+        ("set-dict", 3, set_dict, true, "Set a key to a value in a dict. It'll return the new dict.
+Example:
+(set-dict (dict 1 2) 3 4) ; {1: 2, 3: 4}
+(get (dict) 1 2) ; {1: 2}
+"),
+        ("values", 1, values, true, "Get the values of a dict.
+Example:
+>>> (values (dict 1 2 3 4))
+(tuple 2 4)"),
+        ("get", 2, get_dict, true, "Get a value from a dict by key.
+Example:
+(get (dict 1 2) 1) ; 2
+(get (dict) 1) ; nil
+"),
+        // Lists
+        ("list", 0, list, true, "Create a list from the given elements.
+Example:
+(list 1 2 3) ; (1 2 3)
+"),
+        ("tuple", 0, tuple, true, "Create a list from the given elements.
+(tuple 1 2 3) ; (tuple 1 2 3)
+;; It's usually easier to use the tuple syntax:
+^(1 2 3) ; (tuple 1 2 3)
+"),
+        ("nth", 2, nth, true, "Extract the nth item from a list or tuple. Throws error if this fails.
+Example
+(nth 0 ^(1 2 3)) ; 1
+(nth 1 '(1 2 3)) ; 2
+"),
+        ("flatten", 1, flatten, true, "Flatten a list of lists.
+Example:
+>>> (flatten '('(1 2 3) '(4 5 6) 7))
+(tuple 1 2 3 4 5 6 7)
+"),
+        ("chars", 1, chars, true, "Get a tuple of characters from a string.
+Example:
+(chars \"hello\") ;; (tuple \"h\" \"e\" \"l\" \"l\" \"o\")
+"),
+        ("head", 1, head, true, "Get the first item in a list.
+Example:
+(head ()) ; nil
+(head (1 2 3)) ; 1
+"),
+        ("tail", 1, tail, true, "Get all items after the first in a list or tuple.
+(tail '(1 2 3)) ; (2 3)
+(tail ^()) ; nil
+"),
+        ("cons", 2, cons, true, "Push an item to the front of a list.
+Example:
+(cons 1 '()) ; (1)
+(cons 1 '(2 3)) ; (1 2 3)
+"),
+        ("range", 0, range, true, "Generate a range of numbers. It accepts 0, 1, or 2 arguments. No arguments
+yields an infinite range, one arg stops the range at that arg, and two args denote start..end.
+Example:
+(range) ; infinite range
+(range 5) ; (0 1 2 3 4)
+(range 5 10); (5 6 7 8 9)
+"),
+        // ("product", 2, product, true, "Cartesian product two lists"),
+        ("len", 1, len, true, "Get the number of items in a collection.
+Example:
+(len '(0 0 0)) ; 3
+(len '()) ; 0
+
+Records that define a len method will have that method called:
+(defrecord Foo y)
+(defmethod Foo len () (len self.y))
+(len (Foo '(1 2 3))) ;; 3
+"),
+        ("rev", 1, rev, true, "Reverse a list."),
+        ("zip", 2, zip, true, "Zip two lists together into a list of tuples."),
+        ("len", 1, len, true, "Get the number of items in a list or tuple.
+Example:
+(len '(0 0 0)) ; 3
+(len '()) ; 0
+"),
+
+        ("sort", 1, sort, true, "Sort a given homogeneously typed list in ascending order. Returns an error if types are all not the same.
+Example:
+(sort '(3 7 0 5 4 8 1 2 6 9)) ; (0 1 2 3 4 5 6 7 8 9)
+"),
+        ("distinct", 1, distinct, true, "Remove all duplicates from a list. This will sort the list.
+Example:
+(distinct '(1 1 1 2 2 0 0)) ; (0 1 2)
+"),
+        ("inspect", 2, inspect, true, "Inspect values in a lazy iterator while its running.
+Example:
+>>> (doall (inspect #(println \"curr_item=\" $1) (take 3 (range))))
+curr_item=0
+curr_item=1
+curr_item=2
+(0 1 2)
+"),
+        ("max-by", 2, max_by, true, "Get the maximum value of an iterator by a some function f. Throws an error if called with an empty iteratable.
+Example:
+(max-by
+  (fn (x) (nth 0 x))
+  (lazy (zip (range 10) (range 10)))) ;; (tuple 9 9)"),
+        ("fs::open", 1, FileRecord::from_x9, true, FileRecord::type_doc()),
+        ("defrecord", 1, DynRecord::defrecord, false, DynRecord::type_doc()),
+        ("defmethod", 1, DynRecord::defmethod_x9, false, "Add a method to a record. Cannot be called on instantiated records.
+
+NOTE: Methods get an implicit `self` reference.
+
+;; Example
+
+;; Define a record
+(defrecord Vec3 \"Three Dimensional Vector\" x y z)
+
+(defmethod Vec3 +
+  \"Add two vectors together\"
+  (other)
+  (Vec3
+   (+ other.x self.x)
+   (+ other.y self.y)
+   (+ other.z self.z)))
+
+(def v (Vec3 1 1 1))
+
+(.+ v v) ;; (Vec3 2 2 2)"),
+        ("call_method", 2, call_method, true, "
+Call a method on a record.
+
+Example:
+
+(def f (fs::open \"Hello.txt\"))
+(call_method f \"read_to_string\") ;; no args required
+(call_method f \"write\" \"hello world\") ;; pass it an arg
+"),
+        ("re::compile", 1, RegexRecord::compile_x9, true, RegexRecord::type_doc()),
+        ("methods", 1, doc_methods, true, "Grab all documentation for a record's methods"),
+        ("time", 1, time, false, "Return the time taken to evaluate an expression in milliseconds."),
+        ("catch-err", 1, catch_err, false, "Catch an error. Returns nil if no error is caught."),
+        ("interner-stats", 0, interner_stats, true, "Internal string interner stats."),
+        // ("Foo", 0, crate::records::struct_record::get_foobar_record, true, "Foobar"),
+        ("print-smiley-face", 0, print_smiley_face, true, "print a smiley face"),
+        ("assert-eq", 2, assert_eq, false, "Assert if two items are equal.")
+
+    );
     if !opts.do_not_load_native_stdlib {
         if let Err(e) = load_x9_stdlib(opts, &syms) {
-            panic!("Failed to load stdlib: {e:?}");
+            panic!("Failed to load stdlib: {:?}", e);
         }
     }
     register_record!(syms, SetRecord);
