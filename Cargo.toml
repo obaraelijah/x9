@@ -33,3 +33,6 @@ num-traits = "0.2.14"
 
 [dev-dependencies]
 criterion = "0.5.1"
+
+[profile.release]
+debug = false

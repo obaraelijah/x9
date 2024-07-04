@@ -1,5 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use x9::parser::read;
+use x9::stdlib;
 
 fn parse_benchmark(c: &mut Criterion) {
     let program = "(doall (take 100 (map fib (range)))) (+ 1 1)";
@@ -13,7 +14,16 @@ fn parse_benchmark(c: &mut Criterion) {
 }
 
 fn eval_benchmark(c: &mut Criterion) {
-    todo!()
+    let program = "(doall (take 100 (map fib (range)))) (+ 1 1)";
+    let sym_table = stdlib::create_stdlib_symbol_table_no_cli();
+    c.bench_function("parse doall", |b| {
+        b.iter(|| {
+            for i in read(&program) {
+                let prog = i.unwrap();
+                black_box(prog.eval(&sym_table).unwrap());
+            }
+        })
+    });
 }
 
 criterion_group!(name = benches;
