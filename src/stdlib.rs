@@ -859,18 +859,18 @@ fn make_dict(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Exp
     Ok(Expr::Dict(dict))
 }
 
-fn assoc(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
-    let mut dict = exprs[0].get_dict()?;
-    for (key, value) in exprs.iter().skip(1).tuples() {
-        dict.insert(key.clone(), value.clone());
-    }
-    Ok(Expr::Dict(dict))
-}
-
 fn remove(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
     let mut dict = exprs[0].get_dict()?;
     for key in exprs.iter().skip(1) {
         dict.remove(key);
+    }
+    Ok(Expr::Dict(dict))
+}
+
+fn assoc(exprs: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
+    let mut dict = exprs[0].get_dict()?;
+    for (key, value) in exprs.iter().skip(1).tuples() {
+        dict.insert(key.clone(), value.clone());
     }
     Ok(Expr::Dict(dict))
 }
