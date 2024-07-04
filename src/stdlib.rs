@@ -11,7 +11,7 @@ use itertools::Itertools;
 
 use crate::modules::load_x9_stdlib;
 use crate::records::{DictMutRecord, DictRecord, RecordDoc};
-use crate::records::{DynRecord, FileRecord, RegexRecord, SetRecord, TcpListenerRecord};
+use crate::records::{DynRecord, FileRecord, RegexRecord, ReadChan, WriteChan, SetRecord, TcpListenerRecord};
 use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
@@ -1460,5 +1460,6 @@ pub fn create_stdlib_symbol_table(opts: &Options) -> SymbolTable {
     register_record!(syms, FileRecord);
     register_record!(syms, RegexRecord);
     register_record!(syms, TcpListenerRecord);
+    document_records!(syms, SetRecord, WriteChan, ReadChan);
     syms
 }
