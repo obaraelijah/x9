@@ -177,12 +177,61 @@ impl RecordDoc for FileRecord {
     }
 
     fn type_doc() -> &'static str {
-        "Manipulate files in x9."
+        "Manipulate files in x9.
+Example:
+(def my-file (fs::open \"my_file.txt\"))
+
+;; Write to the file
+(.write my-file \"Hello World\")
+
+;; Read from the file
+(.read_to_string my-file)
+"
     }
 
     fn method_doc() -> &'static [(&'static str, &'static str)] {
         &[
-        // TODO:  Examples
+            (
+                "read_to_string",
+                "Read a files as a string.
+Example:
+(def my-file (fs::open \"my_file.txt\"))
+(.read_to_string my-file) ; file contents
+",
+            ),
+            (
+                "read_lines",
+                "Get all lines of a file as a list.
+Example:
+(def my-file (fs::open \"my_file.txt\"))
+(.read_lines my-file) ; '(\"first_line\" \"second_line\")
+",
+            ),
+            (
+                "write",
+                "Overwrite the file's content with the given string.
+Example:
+(def new-file (fs::open \"new_file.txt\"))
+(.write \"Hello world!\")
+",
+            ),
+            (
+                "append_to_file",
+                "Append to a file without a newline.
+Example:
+(def new-file (fs::open \"new_file.txt\"))
+(.append_to_file \"Hello world!\") ; file contains '...old-contents...Hello world!'
+
+",
+            ),
+            (
+                "append_line",
+                "Append a string to a file with a newline.
+Example:
+(def new-file (fs::open \"new_file.txt\"))
+(.append_line \"Hello world!\") ; file contains '...old-contents...Hello world!\n'
+",
+            ),
         ]
     }
 }
