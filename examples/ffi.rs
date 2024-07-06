@@ -1,4 +1,3 @@
-use std::fmt::write;
 use std::sync::Arc;
 
 use x9::ffi::{ExprHelper, ForeignData, IntoX9Function, X9Interpreter};
@@ -60,6 +59,8 @@ impl ForeignData for MyData {
 
 // Step 4: We're going to add our own function to the interpreter
 fn setup_interpreter(interpreter: &X9Interpreter) {
+    // Our function is going to add two instances of MyData,
+    // and ignore any further input.
     let mydata_sum = |args: Vec<MyData>| {
         let res = match (&args[0], &args[1]) {
             (MyData::Int(l), MyData::Int(r)) => MyData::Int(l + r),
@@ -70,6 +71,10 @@ fn setup_interpreter(interpreter: &X9Interpreter) {
         Ok(res) // we need to return a result
     };
 
+    // The parameters in order to add_function_ptr mean:
+    // - symbol: The name of the function in the interpreter
+    // - minimum_args: The minimum number of args required to run this function.
+    // - function_ptr: The function pointer for the function we're making.
     interpreter.add_function_ptr("mydata-sum", 2, Arc::new(mydata_sum));
 }
 
@@ -78,7 +83,54 @@ fn main() {
     let interpreter = X9Interpreter::new();
 
     // Add our function to it
-    setup_interpreter(&interpreter)
+    setup_interpreter(&interpreter);
+
+    // Run some programs!
+    let program = "(mydata-sum 1 1)";
+    let res = interpreter.run_program::<MyData>(program);
+    println!("{}-> {:?}", program, res);
+    // prints Ok(Int(2))
+
+    // More exotic case: MyData::String + MyData::Int
+    let program = "(mydata-sum \"the number is: \" 1)";
+    let res = interpreter.run_program::<MyData>(program);
+    println!("{} -> {:?}", program, res);
+    // prints Ok(String("the number is: 1"))
+
+    // You do in fact get the correct MyData type after running
+    // the program
+    assert_eq!(
+        interpreter.run_program::<MyData>("(+ 1 1 1)").unwrap(),
+        MyData::Int(3)
+    );
+
+    // Notice that conversions can and will fail
+    let program = "(fn (x) x)";
+    println!(
+        "{} -> {:?}",
+        program,
+        interpreter.run_program::<MyData>(program)
+    );
+    // prints Err(MyError("Cannot convert Fn<+, 1, [ ]> to MyData!"))
+
+    // As we're parameterizing run_program over some type that implements
+    // ForeignData, we can run the same program and get different results.
+    let program = "(+ 1 1)";
+    assert_eq!(interpreter.run_program::<u64>(program).unwrap(), 2);
+
+    // We can more functions, and use them
+    let my_sum_fn = |args: Vec<u64>| args.iter().sum::<u64>();
+    interpreter.add_function("my-sum", my_sum_fn.to_x9_fn());
+    assert_eq!(
+        interpreter.run_program::<u64>("(my-sum '(1 2 3))").unwrap(),
+        6
+    );
+
+    // ... even mixing different types!
+    let string_res = interpreter
+        .run_program::<String>("(my-sum '(1 2 3))")
+        .unwrap();
+    assert_eq!(string_res, "6".to_string());
 }
 
 
