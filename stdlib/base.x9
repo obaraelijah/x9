@@ -53,3 +53,60 @@ Example:
           le    (filter (fn (x) (<= x pivot)) rest)
           ge    (filter (fn (x) (> x pivot)) rest))
          (+ (quicksort le) (list pivot) (quicksort ge)))))
+
+(defn fib-step (x)
+  (tuple (nth 1 x) (+ (nth 0 x) (nth 1 x))))
+
+;; Reduce (0 1) `num` times using fib-step to
+;; generate the `num`'th fibonacci number
+
+(defn fib
+  "Find the `num'th Fibonacci number."
+  (num)
+  (nth 0 (reduce
+          fib-step
+          (tuple 0 1)
+          (range num))))
+
+(defn docp
+  "Pretty print the doc string of a function
+   Example: (docp docp) ;; Pretty print the doc string of a function..."
+  (sym)
+  (println (doc sym)))
+
+
+(defn doc-methods
+  (record)
+  (foreach
+   (fn (rec-method)
+       (do
+           (println "- " (nth 0 rec-method))
+           (println "  - " (nth 1 rec-method))))
+   (methods record)))
+
+(defn max
+    "Maximum element in a list"
+    (ll)
+    (reduce
+     (fn (acc x) (if (> acc x) acc x))
+     ll))
+
+(defn nil? (x)
+  (= x nil))
+
+(defn first
+  "Get the first item of a collection, or nil. Same as head."
+  (collection)
+  (head collection))
+
+(defn second
+  "Get the second item of a collection, or nil"
+  (collection)
+  (head (tail collection)))
+
+(defn divides?
+  (num divisor)
+  (= 0 (% num divisor)))
+
+(defn sum (coll)
+  (apply + coll))
