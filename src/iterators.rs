@@ -220,8 +220,13 @@ impl NaturalNumbers {
 // }
 
 impl LazyIter for NaturalNumbers {
-    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
-        todo!()
+    fn next(&self, _symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        let res = self.counter.fetch_add_one();
+        if res >= self.end.unwrap_or(usize::MAX) {
+            None
+        } else {
+            Some(Ok(Expr::num(res)))
+        }
     }
 
     fn name(&self) -> &'static str {
@@ -262,8 +267,8 @@ impl std::fmt::Display for LazyList {
 }
 
 impl LazyIter for LazyList {
-    fn next(&self, symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
-        todo!()
+    fn next(&self, _symbol_table: &SymbolTable) -> Option<LispResult<Expr>> {
+        self.inner.get(self.index.fetch_add_one()).cloned().map(Ok)
     }
 
     fn name(&self) -> &'static str {
