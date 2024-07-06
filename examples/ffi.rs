@@ -59,13 +59,26 @@ impl ForeignData for MyData {
 }
 
 // Step 4: We're going to add our own function to the interpreter
+fn setup_interpreter(interpreter: &X9Interpreter) {
+    let mydata_sum = |args: Vec<MyData>| {
+        let res = match (&args[0], &args[1]) {
+            (MyData::Int(l), MyData::Int(r)) => MyData::Int(l + r),
+            (MyData::Int(l), MyData::String(r)) => MyData::String(format!("{}{}", l, r)),
+            (MyData::String(l), MyData::Int(r)) => MyData::String(format!("{}{}", l, r)),
+            (MyData::String(l), MyData::String(r)) => MyData::String(format!("{}{}", l, r)),
+        };
+        Ok(res) // we need to return a result
+    };
+
+    interpreter.add_function_ptr("mydata-sum", 2, Arc::new(mydata_sum));
+}
 
 fn main() {
     // Make a new interpreter
     let interpreter = X9Interpreter::new();
 
     // Add our function to it
-
+    setup_interpreter(&interpreter)
 }
 
 
