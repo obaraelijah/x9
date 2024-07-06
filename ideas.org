@@ -4,7 +4,7 @@
 CLOSED: [2024-07-04 Tue 11:19]
 
 ** DONE Allow truthiness override for Records
-CLOSED: [2024-07-04 Thur 12.30]
+CLOSED: [2024-07-06 Thur 16:16]
 
 ** DONE Finish up StructRecord conversion; deprecate stdlib =dict=
 
@@ -28,11 +28,14 @@ fatal runtime error: stack overflow
 [1]    7980 abort (core dumped)  cargo run -- -e foo.x7
 #+end_example
 
-** TODO Add tail call optimization
+** DONE Add tail call optimization
+CLOSED: [2024-07-06 Thur 16:16]
 
-** TODO Add git hook which runs the stdlib test suite
+** DONE Add git hook which runs the stdlib test suite
+CLOSED: [2024-07-06 Thur 16:16]
 
-** TODO Use a generic pattern struct for all binding contexts
+** DONE Use a generic pattern struct for all binding contexts
+CLOSED: [2024-07-06 Thur 16:16]
 
 Something like =Pattern= so it works with def, functions, etc:
 
