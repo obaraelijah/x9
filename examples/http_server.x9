@@ -1,0 +1,55 @@
+;;(def tt (Tcp))
+
+;; The littlest, most scuffed, http library
+
+(defn sum (content)
+  (apply + content))
+
+(defn b (& content)
+  (+ "<b>" (sum content) "</b>"))
+
+(defn br ()
+  "<br/>")
+
+(defn h1 (& content)
+  (+ "<h1>" (sum content) "</h1>"))
+
+(defn h2 (& content)
+  (+ "<h2>" (sum content) "</h2>"))
+
+(defn h3 (& content)
+  (+ "<h3>" (sum content) "</h3>"))
+
+(defn h1 (& content)
+  (+ "<h1>" (sum content) "</h1>"))
+
+(defn p (& content)
+  (+ "<p>" (sum content) "</p>"))
+
+  (defn html (& content)
+  (+ "<!DOCTYPE html><html lang=\"en\">" (sum content) "</html>"))
+
+(defn span (& content)
+  (+ "<span>" (sum content) "</span>"))
+
+(defn a (url & content)
+  (+ "<a href='" url "'>" (sum content) "</a>"))
+
+(defn aclrf (& content)
+  (+ (sum content) (clrf)))
+
+;; Routing and Handling
+
+(defn status-to-string (status)
+  (match status
+         200 "OK"
+         404 "Not Found"
+          "Internal 500Server Error"
+         _   "Unknown"
+         ))
+
+(defn response_headers (status)
+  (+
+   (aclrf "HTTP/1.1 " status " " (status-to-string status))
+   (aclrf "Server: x7")
+   (aclrf "Content-Type: text/html")))
