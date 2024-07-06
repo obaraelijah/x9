@@ -251,7 +251,7 @@ impl Expr {
     }
 
     #[inline]
-    pub(crate) fn string(s: String) -> Self {
+    pub fn string(s: String) -> Self {
         Expr::String(Arc::new(s))
     }
 
