@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use x9::ffi::{ExprHelper, ForeignData, IntoX9Function, X9Interpreter};
 use x9::ast::Expr;
+use x9::ffi::{ExprHelper, ForeignData, IntoX9Function, X9Interpreter};
 
 // This example shows how to use x9's FFI interface.
 // The usual steps are:
@@ -132,5 +132,3 @@ fn main() {
         .unwrap();
     assert_eq!(string_res, "6".to_string());
 }
-
-

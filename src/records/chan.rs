@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 
 use crate::{
-    records::struct_record::StructRecord,
     ast::{Expr, LispResult},
+    records::struct_record::StructRecord,
 };
 
 // use super::{RecordDoc, SetRecord};

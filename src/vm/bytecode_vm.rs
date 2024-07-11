@@ -1,8 +1,8 @@
 use std::io::stdin;
 
 use crate::{
-    bad_types,
     ast::{ByteCompiledFunction, Expr, LispResult, Symbol, SymbolTable},
+    bad_types,
 };
 use anyhow::anyhow;
 use im::Vector;

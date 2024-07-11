@@ -6,7 +6,9 @@ use itertools::Itertools;
 use crate::iterators::CartesianProduct;
 use crate::modules::load_x9_stdlib;
 use crate::records::{DictMutRecord, DictRecord, RecordDoc};
-use crate::records::{DynRecord, FileRecord, RegexRecord, ReadChan, WriteChan, SetRecord, TcpListenerRecord};
+use crate::records::{
+    DynRecord, FileRecord, ReadChan, RegexRecord, SetRecord, TcpListenerRecord, WriteChan,
+};
 use crate::{
     ast::{Expr, Function, LispResult, ProgramError, SymbolTable},
     bad_types,
