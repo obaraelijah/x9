@@ -1,0 +1,3 @@
+(include "examples/project-euler/utils.x9")
+
+(print-res (apply + (primes 2000000)))
