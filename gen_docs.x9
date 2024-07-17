@@ -1,0 +1,16 @@
+(defn pretty-print
+  "Format doc strings into something org-mode will agree with."
+  (x)
+  (bind
+   ((sym docu) x)
+   (do
+       (println "*** =" sym "=")
+       (println "")
+       (println "#+BEGIN_SRC elisp")
+       (println docu)
+       (println "#+END_SRC")
+       (println ""))))
+
+(foreach
+ pretty-print
+ (zip (all-symbols) (map doc (all-symbols))))
