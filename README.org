@@ -5,3 +5,53 @@
 x9 is a lisp I built to better understand programming languages and interpreters.
 
 The standard library is being written in either x9 or rust for performance.
+
+** Features
+*** Usual Lispy Goodness
+
+You have brackets. Lots of brackets. And lists. And functions.
+
+*** Self-documenting
+
+The goal is to have every function describe itself, so you can live in the repl.
+
+Use the =doc= function on a symbol to see it's documentation:
+
+#+begin_example
+>>> (print (doc foreach))
+Eagerly apply the given function to a sequence or list.
+Example:
+(foreach
+  (fn (x) (println x))
+  (range 20)) ; prints 0 to 20. Returns ().
+
+(foreach
+  (fn (x) (println x))
+  (take 5 (map (fn (x) (* x x x x x x)) (range)))) ; prints 0, 1, 64, 729, 4096
+#+end_example
+
+The general goal is to be as helpful as possible. So stacktraces include more
+information than you'd usually get, such as arguments.
+
+For example, the following program will fail:
+
+#+begin_src elisp
+(defn bottom (x) (% x 2))
+(defn middle (x) (bottom x))
+(defn top () (middle "a"))
+(top)
+#+end_src
+
+And give this helpful stacktrace:
+
+#+begin_example
+Error: BadTypes
+
+Stacktrace:
+  - Remainder requires left and right are num types, was given "a" % 2
+  - Error in Fn<%, 2, [ ]>, with args ("a" 2)
+  - Error in Fn<bottom, 1, [ x ]>, with args ("a")
+  - Error in Fn<middle, 1, [ x ]>, with args ("a")
+  - Error in Fn<top, 0, [ ]>, with args ()
+#+end_src
+#+end_example
