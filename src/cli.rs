@@ -182,7 +182,7 @@ impl Hinter for Completions {
     }
 }
 
-pub fn read_cli(sym_table: &SymbolTable, byte_compile: bool) {
+pub fn read_cli(sym_table: &SymbolTable, _byte_compile: bool) {
     let config = Config::builder()
         .edit_mode(EditMode::Vi)
         .auto_add_history(true)

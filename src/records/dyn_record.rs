@@ -129,7 +129,7 @@ impl Record for DynRecord {
         record!(rec)
     }
 
-    fn defmethod(&self, args: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
+    fn defmethod(&self, _args: Vector<Expr>, _symbol_table: &SymbolTable) -> LispResult<Expr> {
         todo!()
     }
 

@@ -346,7 +346,7 @@ impl Expr {
             .unwrap_or(false)
     }
 
-    pub(crate) fn len(&self, symbol_table: &SymbolTable) -> LispResult<usize> {
+    pub(crate) fn len(&self, _symbol_table: &SymbolTable) -> LispResult<usize> {
         let len = match self {
             Expr::List(l) => l.len(),
             Expr::Tuple(l) => l.len(),
