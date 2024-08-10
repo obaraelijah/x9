@@ -272,3 +272,181 @@ Record<Vec3, fields=[ x: 3 y: 3 z: 3 ]>
 >>> v.length
 1.73205080
 #+end_example
+
+*** Anonymous Function Syntactic Sugar
+
+You can easily create anonymous functions with =#(...)=. Here's an example:
+
+#+begin_src lisp
+  (filter #(< $1 10) (range 100)) ;; (0 1 2 3 4 5 6 7 8 9)
+
+  (map #(+ 10 $1) (range 10)) ;; (10 11 12 13 14 15 16 17 18 19)
+#+end_src
+
+Fields are labelled =$1, $2, ...=.
+
+** Language Description
+
+x9 is a quirky lisp which sort of evolved naturally. It has the following data-types:
+
+#+begin_src rust
+  pub enum Expr {
+    Num(Num),
+    Integer(Integer),
+    Symbol(Symbol),
+    List(Vector<Expr>),
+    Function(Arc<Function>),
+    Nil,
+    String(String),
+    Quote(Vector<Expr>),
+    Tuple(Vector<Expr>),
+    Bool(bool),
+    LazyIter(IterType),
+    Dict(Dict),
+    Record(crate::records::RecordType),
+}
+#+end_src
+
+*** =Num=
+
+Numbers in x9 are arbitrary precision =BigDecimal= types backed by the =bigdecimal= crate.
+
+Example:
+#+begin_example
+0
+0.0
+1.1
+1000000000000000000
+#+end_example
+
+*** =Integer=
+
+A fast-path for integer heavy calculations.
+If you can avoid non-whole numbers this is substantially faster than the =Num= type.
+
+Example:
+#+begin_example
+1
+2
+-5
+#+end_example
+
+*** =Symbol=
+
+Symbols are references to some object in the symbol table. They can't contain quotes or brackets.
+
+Example:
+#+begin_example
++
+sort
+doc
+#+end_example
+
+*** =List=
+
+A list is a sequential collection of values. When evaluated, the first argument is called as a function
+with the rest of the elements as arguments.
+
+Example:
+#+begin_example
+(+ 1 2)
+(println "hello world!")
+#+end_example
+
+*** =Function=
+
+A function is a type defined by the =fn= or =defn= keywords. They accept a variable number
+of arguments and carry a local scope. Variables shadow each other, and functions will close over arguments.
+
+
+Example:
+#+begin_src elisp
+(defn is-odd?
+  (x)
+  (= 1 (% x 2))) ; add function is-odd? to symbol table
+
+(map
+  (fn (num) (* num num)) ; anon func
+  (range 20))
+
+(defn not=
+  (& args) ; excess variables can be captured into a list
+  (not (apply = args)))
+#+end_src
+
+*** =Nil=
+
+Null type. Usually equal to an empty list.
+
+*** =String=
+
+A UTF-8 string of characters between two quotes: "hello world!"
+
+*** =Quote=
+
+An unevaluated list. When evaluated, it turns into a list.
+
+Has special syntax: ='(1 2 3)=
+And a keyword: =(quote 1 2 3)=
+
+*** =Tuple=
+
+Same thing as a list, but always evals to itself.
+
+Has special syntax: =^(1 2 3)=
+And a keyword: =(tuple 1 2 3)=
+
+*** =Bool=
+
+Classic boolean. True or false.
+
+Example:
+#+begin_example
+true
+false
+(= 1 0) ;; false
+#+end_example
+
+*** =LazyIter=
+
+A sequence of values backed by a Rust iterator. These are useful for working
+with infinite sequences.
+
+Currently, =map=, =filter=, =take=, and =range= can yield lazy iterators.
+
+They are evaluated with =doall= to make a list or =foreach= to operate on it.
+
+Example:
+
+#+begin_example
+(doall (take 5 (map inc (range)))) ; (1 2 3 4 5)
+; Or
+(foreach
+  println
+  (take 5 (map inc (range)))) ; prints one through five
+#+end_example
+
+*** =Dict=
+
+Classic immutable dictionary. This is certainly a work in progress.
+
+Example:
+#+begin_example
+(def foo (dict "key1" "value1" 3 4))
+
+(get foo 3)  ;; 4
+(get foo "key1")  ;; "value1"
+
+(set foo 5 6)  ;; {"key1": "value1", 3: 4, 5: 6}
+               ;; This does not mutate `foo`!
+(get foo 5)  ;; nil
+#+end_example
+
+*** =Record=
+
+Objects in =x9=. See the [[https://github.com/dpbriggs/x9#dynamic-records-and-syntactic-sugar][record section above]].
+
+** Standard Library Reference
+
+The x9 language has self-documenting features. The standard library reference is generated
+with the script below, which =org-mode= pastes into the list below:
