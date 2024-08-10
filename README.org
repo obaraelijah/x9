@@ -107,3 +107,62 @@ cargo run --example ffi
 *** Speedy Iterators
 
 Certain constructs like =(range)= and =map= are backed by lazy iterators, making them pretty fast.
+
+** Examples
+
+*** Fibonacci Numbers
+
+We can print the first hundred fibonacci numbers in 14 milliseconds:
+
+#+begin_src elisp
+;; fib.x9
+;; Run with: x9 fib.x9
+
+;; Map (l, r) -> (r, l + r)
+
+(defn fib-step (x)
+  (bind ((l r) x) ^(r (+ l r))))
+
+;; Reduce (0 1) `num` times using fib-step to
+;; generate the `num`'th fibonacci number
+
+(defn fib (num)
+  (nth 0 (reduce
+          fib-step
+          (tuple 0 1)
+          (range num))))
+
+;; Print one hundred fibonacci numbers
+;;
+;; Note: (take 100 (map fib (range)))
+;; is an iterator which maps to Rust's iterators which
+;; makes them very fast. No weird intermediate allocations.
+
+(println (time (foreach
+                println
+                (take 100 (map fib (range))))))
+#+end_src
+
+Outputs:
+
+#+begin_example
+0
+1
+1
+2
+3
+5
+8
+13
+21
+34
+55
+89
+144
+233
+377
+...truncated...
+83621143489848422977
+135301852344706746049
+218922995834555169026
+#+end_example
