@@ -55,3 +55,55 @@ Stacktrace:
   - Error in Fn<top, 0, [ ]>, with args ()
 #+end_src
 #+end_example
+
+*** Convenient FFI
+
+x9 offers easy and convenient embedding into other rust programs.
+
+#+begin_src rust
+  use x9::ffi::{x9Interpreter, ForeignData};
+
+  let interpreter = x9Interpreter::new();
+  let res = interpreter.run_program::<u64>("(+ 1 1)").unwrap();
+  assert_eq!(res, 2);
+#+end_src
+
+You can interface your own types in x9 with the =ForeignData= trait, and
+add foreign functions into the interpreter. To maximize convenience foreign functions
+are typed in terms of their own datatypes - not x9's Expr type.
+
+#+begin_src rust
+  let interpreter = x9Interpreter::new();
+  let my_sum_fn = |args: Vec<u64>| Ok(args.iter().sum());
+  // Add the my-sum to interpreter
+  interpreter.add_function("my-sum", 1, Arc::new(my_sum_fn));
+
+  // And verify we get u64 with value 6 out of it.
+  assert_eq!(interpreter.run_program::<u64>("(my-sum 1 2 3)").unwrap(), 6);
+#+end_src
+
+More interesting is the fact that functions added to the interpreter
+in a strongly typed way, allowing us to mix types!
+
+#+begin_src rust
+  // Recall that my-sum is a Fn(Vec<u64>) -> u64
+  let string_res = interpreter.run_program::<String>("(my-sum 1 2 3)").unwrap();
+  // And we get a string out it!
+  assert_eq!(string_res, "6".to_string());
+#+end_src
+
+The reason it works is we embed the type information into the function
+added to the interpreter, and x9's =Expr= type acts as a bridge between types.
+
+For more info see the =ffi.rs= example in the examples folder!
+
+You can run the example with:
+
+#+begin_example
+cargo run --example ffi
+#+end_example
+
+
+*** Speedy Iterators
+
+Certain constructs like =(range)= and =map= are backed by lazy iterators, making them pretty fast.
