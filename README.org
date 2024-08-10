@@ -166,3 +166,109 @@ Outputs:
 135301852344706746049
 218922995834555169026
 #+end_example
+
+** More Features
+*** Dynamic Records and Syntactic Sugar
+
+A recent addition to the language is the =defrecord= and =defmethod= functions,
+which allow you to define records in =x9= and add methods to the them respectively.
+
+Here's an example of defining =Vec3=, and a way to add them together:
+
+#+begin_src lisp
+  ;; Define a record
+  (defrecord Vec3 "Three dimensional vector" x y z)
+
+  ;; Add a method to it
+  (defmethod Vec3 +
+    "Add two vectors together"
+    (other)
+    (Vec3
+     (+ other.x self.x)
+     (+ other.y self.y)
+     (+ other.z self.z)))
+#+end_src
+
+This lets us encapsulate data, and access it in a nice structured way.
+
+#+begin_src lisp
+  ;; Instantiate a Vec3
+  (def my-vector (Vec3 1 1 1))
+
+  ;; Call the + method
+  (.+ my-vector my-vector) ;; Record<Vec3, fields=[ x: 2 y: 2 z: 2 ]>
+#+end_src
+
+The process of adding this support added two
+new ways to interact with expressions - callable Records and field-access-sugar
+
+**** Callable Records
+
+To make record construction nice, you can treat records defined with =defrecord= as constructor functions:
+
+#+begin_example
+>>> (defrecord Point x y)
+Record<Point, uninitialized>
+>>> (Point 0 0)
+Record<Point, fields=[ x: 0 y: 0 ]>
+#+end_example
+
+**** Record Field Syntactic Sugar
+
+By default, fields of a record are treated as zero-arity methods on that record, with =self= being inserted with method_call syntax.
+
+This meant that this got old after a while:
+
+#+begin_example
+(+ (.x self) (.x other))
+#+end_example
+
+So I added some sugar in the form of =self.x=:
+
+#+begin_example
+>>> (defrecord Point x y)
+>>> (def origin (Point 0 0))
+>>> origin.x
+0
+#+end_example
+
+It works in a recursive way if you have deeply nested fields.
+
+#+begin_example
+>>> (defrecord Point x y)
+>>> (defrecord Space origin)
+>>> (def space (Space (Point 0 0)))
+>>> space.origin
+Record<Point, fields=[ x: 0 y: 0 ]>
+>>> space.origin.x
+0
+>>> space.origin.y
+0
+#+end_example
+
+The syntax immediately evaluates, as it gets transformed a nested list of function calls:
+
+#+begin_example
+space.origin.y ;; (.y (.origin space))
+#+end_example
+
+You can do some tricks with this, like this:
+
+#+begin_src lisp
+  (def file (fs::open "input.txt"))
+  (def re (re::compile "(\d+)-(\d+) (.): (.*)"))
+  (def captures (.captures re file.read_to_string))
+#+end_src
+
+Zero arity functions can also be referenced:
+
+#+begin_example
+>>> (def v (Vec3 1 1 1))
+nil
+>>> v.scale
+Fn<curried_method_call<Vec3<scale>; #args=1>, 0, [ ]>
+>>> (v.scale 3)
+Record<Vec3, fields=[ x: 3 y: 3 z: 3 ]>
+>>> v.length
+1.73205080
+#+end_example
