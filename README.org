@@ -3423,3 +3423,26 @@ Close the writer. This will stop any readers on the channel.
 #+BEGIN_SRC elisp
 Returns true if the channel is closed.
 #+END_SRC
+
+*** =ReadChan.close=
+
+#+BEGIN_SRC elisp
+Close the reader. This will fail if the reader has been closed.
+#+END_SRC
+
+*** =ReadChan.is_closed=
+
+#+BEGIN_SRC elisp
+Returns true if the channel is closed.
+#+END_SRC
+
+*** =pretty-print=
+
+#+BEGIN_SRC elisp
+Format doc strings into something org-mode will agree with.
+#+END_SRC
+
+
+* Thanks
+
+A big thanks to the [[https://github.com/Geal/nom][nom]] people (Geal et all) for having an s_expression example for my parser!
