@@ -3398,7 +3398,6 @@ Example:
 #+END_SRC
 
 *** =WriteChan=
-
 #+BEGIN_SRC elisp
 Write side of a channel
 #+END_SRC
