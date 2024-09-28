@@ -180,6 +180,7 @@ impl DynRecord {
         rec.defmethod(exprs.skip(1), symbol_table)
     }
 
+    #[allow(dead_code)]
     fn add_method_x9(&self, exprs: Vector<Expr>, symbol_table: &SymbolTable) -> LispResult<Expr> {
         if self.initialized {
             bail!("Cannot add methods to initialized record {}", self.name)

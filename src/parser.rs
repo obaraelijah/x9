@@ -1,3 +1,4 @@
+#[warn(dead_code)]
 use std::sync::Arc;
 
 use anyhow::anyhow;
@@ -37,6 +38,7 @@ fn parse_symbol(input: &str) -> LispResult<(Expr, usize)> {
     Ok((res, end_index))
 }
 
+#[allow(dead_code)]
 fn method_call(method: String) -> Expr {
     let method_clone = method.clone();
     let method_fn = move |args: Vector<Expr>, sym: &SymbolTable| {
@@ -60,6 +62,7 @@ fn method_call(method: String) -> Expr {
 ///
 /// If there's left hand side, like `.read_to_string`,
 /// return a `Fn<method_call<read_to_string>>` instead.
+#[allow(dead_code)]
 fn method_call_multiple(methods: Vec<String>) -> Expr {
     if methods.len() == 1 {
         return method_call(methods[0].clone());

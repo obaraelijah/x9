@@ -13,6 +13,7 @@ fn parse_benchmark(c: &mut Criterion) {
     });
 }
 
+#[allow(dead_code)]
 fn eval_benchmark(c: &mut Criterion) {
     let program = "(doall (take 100 (map fib (range)))) (+ 1 1)";
     let sym_table = stdlib::create_stdlib_symbol_table_no_cli();
