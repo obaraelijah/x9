@@ -140,8 +140,8 @@ impl Highlighter for Completions {
         self.highlighter.highlight(line, pos)
     }
 
-    fn highlight_char(&self, line: &str, pos: usize) -> bool {
-        self.highlighter.highlight_char(line, pos)
+    fn highlight_char(&self, line: &str, pos: usize, forced: bool) -> bool {
+        self.highlighter.highlight_char(line, pos, forced)
     }
 }
 
@@ -190,8 +190,16 @@ pub fn read_cli(sym_table: &SymbolTable, _byte_compile: bool) {
         .tab_stop(2)
         .build();
     // TODO: Auto-complete
-    let mut rl = Editor::<Completions>::with_config(config);
     let helper = Completions::new(sym_table.clone());
+
+    let mut rl = match Editor::<Completions, rustyline::history::FileHistory>::with_config(config) {
+        Ok(editor) => editor,
+        Err(err) => {
+            eprintln!("Error creating editor: {}", err);
+            return;
+        }
+    };
+
     rl.set_helper(Some(helper));
     if rl.load_history("history.txt").is_err() {
         if let Err(e) = File::create("history.txt") {
@@ -202,9 +210,11 @@ pub fn read_cli(sym_table: &SymbolTable, _byte_compile: bool) {
         }
         println!("No previous history.");
     }
+
     let quit_symbol = Expr::Symbol("quit".into());
     let exit_symbol = Expr::Symbol("exit".into());
     // TODO: add bytecode com-pile
+
     loop {
         let readline = rl.readline(">>> ");
         match readline {
@@ -247,7 +257,10 @@ pub fn read_cli(sym_table: &SymbolTable, _byte_compile: bool) {
             }
         }
     }
-    rl.save_history("history.txt").unwrap();
+
+    if let Err(err) = rl.save_history("history.txt") {
+        eprintln!("Error saving history: {}", err);
+    }
 }
 
 pub fn report_error(err: &anyhow::Error) {
