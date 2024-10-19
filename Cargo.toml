@@ -4,15 +4,6 @@ version = "0.1.0"
 authors = ["Elijah Obara <elijahobara357@gmail.com>"]
 edition = "2021"
 
-
-[lib]
-name  = "x9"
-path = "src/lib.rs"
-
-[[bin]]
-name  = "x9"
-path = "src/main.rs"
-
 [dependencies]
 anyhow = "1.0.90"
 im = "15.1.0"
@@ -33,6 +24,14 @@ num-traits = "0.2.14"
 
 [dev-dependencies]
 criterion = "0.5.1"
+
+[lib]
+name  = "x9"
+path = "src/lib.rs"
+
+[[bin]]
+name  = "x9"
+path = "src/main.rs"
 
 [profile.release]
 debug = false
