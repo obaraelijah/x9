@@ -63,6 +63,7 @@ CLOSED: [2024-07-04 Thur 20.10]
 *** TODO Use a record to represent requests
 
 ** TODO Add a "help" function
+CLOSED: [2024-10-19 Saturday 16:16]
 
 ** TODO Fix bug when comparing tuples
 
